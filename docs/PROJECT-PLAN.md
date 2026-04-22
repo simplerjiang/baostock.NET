@@ -144,8 +144,10 @@ v1.0 必交付共 **27 个**公开方法：`login`、`logout`、`set_API_key`（
 ### 3.2 帧格式（一条完整消息）
 
 ```
-[ MESSAGE_HEADER (21 字节, ASCII) ] [ BODY (UTF-8, body_length 字节) ] \x01 [ CRC32 (10 位 ASCII 数字, 左补零) ] \n
+[ MESSAGE_HEADER (21 字节, ASCII) ] [ BODY (UTF-8, body_length 字节) ] \x01 [ CRC32 (变长十进制 ASCII, 不补零) ] \n
 ```
+
+> CRC32 = `zlib.crc32(header || body)` 的十进制 ASCII 字符串，**变长、不补零**，紧跟在 `\x01` 之后、`\n` 之前。已通过 [tests/Fixtures/login/request.bin](../tests/Fixtures/login/request.bin) 实测验证（值=359766228，长度 9 字节）。.NET 端用 `System.IO.Hashing.Crc32`，与 Python `zlib.crc32` 输出完全一致。
 
 - `MESSAGE_HEADER_LENGTH = 21`
 - `MESSAGE_SPLIT = "\x01"`：消息内部各段分隔符
