@@ -1,0 +1,7 @@
+name=query_trade_dates
+error_code=0
+error_msg=success
+fields=['calendar_date', 'is_trading_day']
+rows=10
+req_bytes=90
+resp_bytes=345

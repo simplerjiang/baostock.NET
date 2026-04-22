@@ -1,0 +1,7 @@
+name=query_dupont_data
+error_code=0
+error_msg=success
+fields=['code', 'pubDate', 'statDate', 'dupontROE', 'dupontAssetStoEquity', 'dupontAssetTurn', 'dupontPnitoni', 'dupontNitogr', 'dupontTaxBurden', 'dupontIntburden', 'dupontEbittogr']
+rows=1
+req_bytes=84
+resp_bytes=375

@@ -1,0 +1,9 @@
+name=query_suspended_stocks
+request_msg_type=69
+response_msg_type=70
+error_code=0
+error_msg=success
+req_bytes=84
+resp_bytes=135
+socket_status=ok
+body_preview=0|success|query_suspended_stocks|anonymous|1|10000||2024-01-02|updateDate, code, code_name|2644211955<![CDATA[]]>\n

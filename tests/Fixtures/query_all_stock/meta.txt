@@ -1,0 +1,7 @@
+name=query_all_stock
+error_code=0
+error_msg=success
+fields=['code', 'tradeStatus', 'code_name']
+rows=5638
+req_bytes=77
+resp_bytes=188942

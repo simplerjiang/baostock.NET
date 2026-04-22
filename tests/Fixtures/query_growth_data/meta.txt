@@ -1,0 +1,7 @@
+name=query_growth_data
+error_code=0
+error_msg=success
+fields=['code', 'pubDate', 'statDate', 'YOYEquity', 'YOYAsset', 'YOYNI', 'YOYEPSBasic', 'YOYPNI']
+rows=1
+req_bytes=85
+resp_bytes=284

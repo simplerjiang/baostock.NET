@@ -1,0 +1,9 @@
+name=query_terminated_stocks
+request_msg_type=67
+response_msg_type=68
+error_code=0
+error_msg=success
+req_bytes=84
+resp_bytes=9520
+socket_status=ok
+body_preview=0|success|query_terminated_stocks|anonymous|1|10000|{"record":[["2024-01-01","sh.600001","邯郸钢铁"],["2024-01-01","sh.600002","齐鲁石化"],["2024-01-01","sh.600003","ST东北高"],["2024-01-01","sh.600005","武钢股份"],

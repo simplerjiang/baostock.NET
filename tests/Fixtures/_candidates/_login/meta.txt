@@ -1,0 +1,6 @@
+name=login
+request_msg_type=00
+error_code=0
+error_msg=success
+req_bytes=56
+resp_bytes=87

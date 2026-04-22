@@ -1,0 +1,7 @@
+name=query_performance_express_report
+error_code=0
+error_msg=success
+fields=['code', 'performanceExpPubDate', 'performanceExpStatDate', 'performanceExpUpdateDate', 'performanceExpressTotalAsset', 'performanceExpressNetAsset', 'performanceExpressEPSChgPct', 'performanceExpressROEWa', 'performanceExpressEPSDiluted', 'performanceExpressGRYOY', 'performanceExpressOPYOY']
+rows=2
+req_bytes=115
+resp_bytes=722

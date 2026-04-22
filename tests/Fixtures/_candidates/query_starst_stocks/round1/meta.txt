@@ -1,0 +1,9 @@
+name=query_starst_stocks
+request_msg_type=73
+response_msg_type=04
+error_code=10004006
+error_msg=请求参
+req_bytes=70
+resp_bytes=81
+socket_status=ok
+body_preview=10004006|请求参数个数不正确|2919836516<![CDATA[]]>\n

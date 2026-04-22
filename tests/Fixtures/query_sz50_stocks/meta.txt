@@ -1,0 +1,7 @@
+name=query_sz50_stocks
+error_code=0
+error_msg=success
+fields=['updateDate', 'code', 'code_name']
+rows=50
+req_bytes=69
+resp_bytes=2226

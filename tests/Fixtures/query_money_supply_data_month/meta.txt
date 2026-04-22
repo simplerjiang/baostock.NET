@@ -1,0 +1,7 @@
+name=query_money_supply_data_month
+error_code=0
+error_msg=success
+fields=['statYear', 'statMonth', 'm0Month', 'm0YOY', 'm0ChainRelative', 'm1Month', 'm1YOY', 'm1ChainRelative', 'm2Month', 'm2YOY', 'm2ChainRelative']
+rows=12
+req_bytes=96
+resp_bytes=1826

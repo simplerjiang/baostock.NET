@@ -1,0 +1,7 @@
+name=query_required_reserve_ratio_data
+error_code=0
+error_msg=success
+fields=['pubDate', 'effectiveDate', 'bigInstitutionsRatioPre', 'bigInstitutionsRatioAfter', 'mediumInstitutionsRatioPre', 'mediumInstitutionsRatioAfter']
+rows=19
+req_bytes=107
+resp_bytes=1340

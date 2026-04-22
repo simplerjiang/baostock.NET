@@ -1,0 +1,46 @@
+# .NET build output
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Test results
+TestResults/
+*.trx
+coverage*.xml
+*.coverage
+
+# Rider / Resharper
+.idea/
+_ReSharper*/
+
+# VS Code (keep settings.json/extensions.json if intentionally added)
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# Python (reference/ may contain .pyc if regenerated)
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Local secrets / scratch
+*.local.*
+scratch/
+
+# Capture / fixtures binary artifacts (keep markdown indices)
+tools/capture-fixtures/__pycache__/
+

@@ -1,0 +1,7 @@
+name=query_forecast_report
+error_code=0
+error_msg=success
+fields=['code', 'profitForcastExpPubDate', 'profitForcastExpStatDate', 'profitForcastType', 'profitForcastAbstract', 'profitForcastChgPctUp', 'profitForcastChgPctDwn']
+rows=0
+req_bytes=104
+resp_bytes=266

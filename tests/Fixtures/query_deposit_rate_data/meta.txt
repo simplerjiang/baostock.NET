@@ -1,0 +1,7 @@
+name=query_deposit_rate_data
+error_code=0
+error_msg=success
+fields=['pubDate', 'demandDepositRate', 'fixedDepositRate3Month', 'fixedDepositRate6Month', 'fixedDepositRate1Year', 'fixedDepositRate2Year', 'fixedDepositRate3Year', 'fixedDepositRate5Year', 'installmentFixedDepositRate1Year', 'installmentFixedDepositRate3Year', 'installmentFixedDepositRate5Year']
+rows=13
+req_bytes=96
+resp_bytes=1928

@@ -1,0 +1,7 @@
+name=query_history_k_data_plus
+error_code=0
+error_msg=success
+fields=['date', 'code', 'open', 'high', 'low', 'close', 'preclose', 'volume', 'amount', 'adjustflag', 'turn', 'tradestatus', 'pctChg', 'isST']
+rows=22
+req_bytes=204
+resp_bytes=1341

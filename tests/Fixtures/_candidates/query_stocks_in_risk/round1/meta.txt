@@ -1,0 +1,9 @@
+name=query_stocks_in_risk
+request_msg_type=93
+response_msg_type=04
+error_code=10004020
+error_msg=错误�
+req_bytes=70
+resp_bytes=75
+socket_status=ok
+body_preview=10004020|错误的消息类型|1867595674<![CDATA[]]>\n

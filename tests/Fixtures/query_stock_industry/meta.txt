@@ -1,0 +1,7 @@
+name=query_stock_industry
+error_code=0
+error_msg=success
+fields=['updateDate', 'code', 'code_name', 'industry', 'industryClassification']
+rows=1
+req_bytes=82
+resp_bytes=268

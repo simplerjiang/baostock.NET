@@ -1,0 +1,7 @@
+name=query_money_supply_data_year
+error_code=0
+error_msg=success
+fields=['statYear', 'm0Year', 'm0YearYOY', 'm1Year', 'm1YearYOY', 'm2Year', 'm2YearYOY']
+rows=4
+req_bytes=89
+resp_bytes=554

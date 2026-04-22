@@ -1,0 +1,9 @@
+name=query_starst_stocks
+request_msg_type=73
+response_msg_type=74
+error_code=0
+error_msg=success
+req_bytes=81
+resp_bytes=2172
+socket_status=ok
+body_preview=0|success|query_starst_stocks|anonymous|1|10000|{"record":[["2024-01-01","sh.600117","*ST西钢"],["2024-01-01","sh.600136","*ST明诚"],["2024-01-01","sh.600290","*ST华仪"],["2024-01-01","sh.600306","*ST商城"],[

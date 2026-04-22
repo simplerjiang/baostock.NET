@@ -1,0 +1,7 @@
+name=query_adjust_factor
+error_code=0
+error_msg=success
+fields=['code', 'dividOperateDate', 'foreAdjustFactor', 'backAdjustFactor', 'adjustFactor']
+rows=1
+req_bytes=100
+resp_bytes=267

@@ -1,0 +1,7 @@
+name=query_stock_basic
+error_code=0
+error_msg=success
+fields=['code', 'code_name', 'ipoDate', 'outDate', 'type', 'status']
+rows=1
+req_bytes=79
+resp_bytes=215

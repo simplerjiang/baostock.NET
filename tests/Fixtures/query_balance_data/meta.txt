@@ -1,0 +1,7 @@
+name=query_balance_data
+error_code=0
+error_msg=success
+fields=['code', 'pubDate', 'statDate', 'currentRatio', 'quickRatio', 'cashRatio', 'YOYLiability', 'liabilityToAsset', 'assetToEquity']
+rows=1
+req_bytes=86
+resp_bytes=304

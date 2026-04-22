@@ -1,0 +1,7 @@
+name=logout
+error_code=0
+error_msg=success
+fields=[]
+rows=0
+req_bytes=64
+resp_bytes=89

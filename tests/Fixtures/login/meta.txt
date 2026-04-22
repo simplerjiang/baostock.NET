@@ -1,0 +1,7 @@
+name=login
+error_code=0
+error_msg=success
+fields=[]
+rows=0
+req_bytes=56
+resp_bytes=88

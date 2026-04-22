@@ -1,0 +1,7 @@
+name=query_cash_flow_data
+error_code=0
+error_msg=success
+fields=['code', 'pubDate', 'statDate', 'CAToAsset', 'NCAToAsset', 'tangibleAssetToAsset', 'ebitToInterest', 'CFOToOR', 'CFOToNP', 'CFOToGr']
+rows=1
+req_bytes=88
+resp_bytes=310

@@ -1,0 +1,7 @@
+name=query_loan_rate_data
+error_code=0
+error_msg=success
+fields=['pubDate', 'loanRate6Month', 'loanRate6MonthTo1Year', 'loanRate1YearTo3Year', 'loanRate3YearTo5Year', 'loanRateAbove5Year', 'mortgateRateBelow5Year', 'mortgateRateAbove5Year']
+rows=13
+req_bytes=91
+resp_bytes=1483

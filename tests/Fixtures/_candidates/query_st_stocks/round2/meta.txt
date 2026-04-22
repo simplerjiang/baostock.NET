@@ -1,0 +1,9 @@
+name=query_st_stocks
+request_msg_type=71
+response_msg_type=72
+error_code=0
+error_msg=success
+req_bytes=77
+resp_bytes=2584
+socket_status=ok
+body_preview=0|success|query_st_stocks|anonymous|1|10000|{"record":[["2024-01-01","sh.600070","ST富润"],["2024-01-01","sh.600078","ST澄星"],["2024-01-01","sh.600112","ST天成"],["2024-01-01","sh.600265","ST景谷"],["2024-01
