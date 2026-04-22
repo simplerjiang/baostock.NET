@@ -40,6 +40,9 @@ Thumbs.db
 # Local secrets / scratch
 *.local.*
 scratch/
+*.testkey
+.env
+.env.*
 
 # Capture / fixtures binary artifacts (keep markdown indices)
 tools/capture-fixtures/__pycache__/
