@@ -17,8 +17,9 @@
     <Description>Pure .NET 9 client for baostock China A-share market data. 1:1 coverage of the Python baostock package.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/user/baostock.Net</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/user/baostock.Net</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/simplerjiang/baostock.NET</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/simplerjiang/baostock.NET.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageTags>baostock;china;a-share;stock;market-data;finance</PackageTags>
   </PropertyGroup>
 
