@@ -10,6 +10,10 @@ public partial class BaostockClient
     /// <summary>
     /// 查询存款利率。MSG 47/48。
     /// </summary>
+    /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行存款利率数据。</returns>
     public async IAsyncEnumerable<DepositRateRow> QueryDepositRateDataAsync(
         string? startDate = null,
         string? endDate = null,
@@ -65,6 +69,10 @@ public partial class BaostockClient
     /// <summary>
     /// 查询贷款利率。MSG 49/50。
     /// </summary>
+    /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行贷款利率数据。</returns>
     public async IAsyncEnumerable<LoanRateRow> QueryLoanRateDataAsync(
         string? startDate = null,
         string? endDate = null,
@@ -117,6 +125,11 @@ public partial class BaostockClient
     /// <summary>
     /// 查询存款准备金率。MSG 51/52。
     /// </summary>
+    /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="yearType">年份类型，默认 <c>"0"</c>。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行存款准备金率数据。</returns>
     public async IAsyncEnumerable<ReserveRatioRow> QueryRequiredReserveRatioDataAsync(
         string? startDate = null,
         string? endDate = null,
@@ -169,6 +182,10 @@ public partial class BaostockClient
     /// <summary>
     /// 查询货币供应量（月度）。MSG 53/54。
     /// </summary>
+    /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行货币供应量月度数据。</returns>
     public async IAsyncEnumerable<MoneySupplyMonthRow> QueryMoneySupplyDataMonthAsync(
         string? startDate = null,
         string? endDate = null,
@@ -224,6 +241,10 @@ public partial class BaostockClient
     /// <summary>
     /// 查询货币供应量（年底余额）。MSG 55/56。
     /// </summary>
+    /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行货币供应量年度数据。</returns>
     public async IAsyncEnumerable<MoneySupplyYearRow> QueryMoneySupplyDataYearAsync(
         string? startDate = null,
         string? endDate = null,

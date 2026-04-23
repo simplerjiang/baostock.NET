@@ -10,6 +10,9 @@ public partial class BaostockClient
     /// <summary>
     /// 查询终止上市股票列表。MSG 67/68。
     /// </summary>
+    /// <param name="date">查询日期，格式 <c>"yyyy-MM-dd"</c>；为 <c>null</c> 时使用服务端默认值。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行终止上市股票数据。</returns>
     public async IAsyncEnumerable<SpecialStockRow> QueryTerminatedStocksAsync(
         string? date = null,
         [EnumeratorCancellation] CancellationToken ct = default)
@@ -26,6 +29,9 @@ public partial class BaostockClient
     /// <summary>
     /// 查询暂停上市股票列表。MSG 69/70。
     /// </summary>
+    /// <param name="date">查询日期，格式 <c>"yyyy-MM-dd"</c>；为 <c>null</c> 时使用服务端默认值。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行暂停上市股票数据。</returns>
     public async IAsyncEnumerable<SpecialStockRow> QuerySuspendedStocksAsync(
         string? date = null,
         [EnumeratorCancellation] CancellationToken ct = default)
@@ -42,6 +48,9 @@ public partial class BaostockClient
     /// <summary>
     /// 查询 ST 股票列表。MSG 71/72。
     /// </summary>
+    /// <param name="date">查询日期，格式 <c>"yyyy-MM-dd"</c>；为 <c>null</c> 时使用服务端默认值。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行 ST 股票数据。</returns>
     public async IAsyncEnumerable<SpecialStockRow> QueryStStocksAsync(
         string? date = null,
         [EnumeratorCancellation] CancellationToken ct = default)
@@ -58,6 +67,9 @@ public partial class BaostockClient
     /// <summary>
     /// 查询 *ST 股票列表。MSG 73/74。
     /// </summary>
+    /// <param name="date">查询日期，格式 <c>"yyyy-MM-dd"</c>；为 <c>null</c> 时使用服务端默认值。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行 *ST 股票数据。</returns>
     public async IAsyncEnumerable<SpecialStockRow> QueryStarStStocksAsync(
         string? date = null,
         [EnumeratorCancellation] CancellationToken ct = default)

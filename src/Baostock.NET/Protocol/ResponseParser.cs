@@ -115,6 +115,15 @@ public static class ResponseParser
 /// <summary>
 /// 单页查询响应的结构化结果。
 /// </summary>
+/// <param name="ErrorCode">错误码（成功时为 <c>"0"</c>）。</param>
+/// <param name="ErrorMessage">错误信息。</param>
+/// <param name="Method">服务端回填的方法名。</param>
+/// <param name="UserId">服务端回填的用户 ID。</param>
+/// <param name="Fields">字段列表。</param>
+/// <param name="CurPageNum">当前页码。</param>
+/// <param name="PerPageCount">每页条数。</param>
+/// <param name="TotalPageNum">总页数。</param>
+/// <param name="Rows">数据行列表，每行是字符串数组。</param>
 public sealed record PageResult(
     string ErrorCode,
     string ErrorMessage,

@@ -6,6 +6,9 @@ namespace Baostock.NET.Protocol;
 /// 21 字节定长消息头：<c>Version(7) + \x01 + MessageType(2) + \x01 + BodyLength(10位左补零)</c>，UTF-8 编码。
 /// 对应 Python <c>data/messageheader.to_message_header</c>。注意 BodyLength 是消息体字节长度，不含头部。
 /// </summary>
+/// <param name="Version">协议版本号，如 <c>00.9.10</c>。</param>
+/// <param name="MessageType">消息类型，2 位 ASCII，如 <c>00</c> 表示登录请求。</param>
+/// <param name="BodyLength">消息体字节长度。</param>
 public readonly record struct MessageHeader(string Version, string MessageType, int BodyLength)
 {
     /// <summary>从 21 字节切片解析出消息头。</summary>

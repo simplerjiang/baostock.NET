@@ -10,6 +10,10 @@ public partial class BaostockClient
     /// <summary>
     /// 查询交易日信息。MSG 33/34。
     /// </summary>
+    /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行交易日数据。</returns>
     public async IAsyncEnumerable<TradeDateRow> QueryTradeDatesAsync(
         string? startDate = null,
         string? endDate = null,
@@ -63,6 +67,9 @@ public partial class BaostockClient
     /// <summary>
     /// 查询指定日期的全部证券列表。MSG 35/36。
     /// </summary>
+    /// <param name="day">查询日期，格式 <c>"yyyy-MM-dd"</c>；为 <c>null</c> 时默认当天。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行证券列表数据。</returns>
     public async IAsyncEnumerable<StockListRow> QueryAllStockAsync(
         string? day = null,
         [EnumeratorCancellation] CancellationToken ct = default)
@@ -114,6 +121,10 @@ public partial class BaostockClient
     /// <summary>
     /// 查询证券基本资料。MSG 45/46。code 和 code_name 可同时为空（返回全部），code_name 支持模糊查询。
     /// </summary>
+    /// <param name="code">证券代码，为 <c>null</c> 时不按代码筛选。</param>
+    /// <param name="codeName">证券名称（支持模糊查询），为 <c>null</c> 时不按名称筛选。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行证券基本资料数据。</returns>
     public async IAsyncEnumerable<StockBasicRow> QueryStockBasicAsync(
         string? code = null,
         string? codeName = null,

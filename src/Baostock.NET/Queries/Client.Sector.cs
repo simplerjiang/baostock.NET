@@ -10,6 +10,10 @@ public partial class BaostockClient
     /// <summary>
     /// 查询行业分类。MSG 59/60。code 和 date 均可为空。
     /// </summary>
+    /// <param name="code">证券代码，为 <c>null</c> 时查询全部。</param>
+    /// <param name="date">查询日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行行业分类数据。</returns>
     public async IAsyncEnumerable<StockIndustryRow> QueryStockIndustryAsync(
         string? code = null,
         string? date = null,
@@ -63,6 +67,9 @@ public partial class BaostockClient
     /// <summary>
     /// 查询沪深 300 成分股。MSG 61/62。
     /// </summary>
+    /// <param name="date">查询日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行成分股数据。</returns>
     public async IAsyncEnumerable<IndexConstituentRow> QueryHs300StocksAsync(
         string? date = null,
         [EnumeratorCancellation] CancellationToken ct = default)
@@ -79,6 +86,9 @@ public partial class BaostockClient
     /// <summary>
     /// 查询上证 50 成分股。MSG 63/64。
     /// </summary>
+    /// <param name="date">查询日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行成分股数据。</returns>
     public async IAsyncEnumerable<IndexConstituentRow> QuerySz50StocksAsync(
         string? date = null,
         [EnumeratorCancellation] CancellationToken ct = default)
@@ -95,6 +105,9 @@ public partial class BaostockClient
     /// <summary>
     /// 查询中证 500 成分股。MSG 65/66。
     /// </summary>
+    /// <param name="date">查询日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行成分股数据。</returns>
     public async IAsyncEnumerable<IndexConstituentRow> QueryZz500StocksAsync(
         string? date = null,
         [EnumeratorCancellation] CancellationToken ct = default)

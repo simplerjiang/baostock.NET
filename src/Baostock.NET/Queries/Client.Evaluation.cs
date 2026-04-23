@@ -10,6 +10,11 @@ public partial class BaostockClient
     /// <summary>
     /// 查询股息分红。MSG 13/14。
     /// </summary>
+    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="year">年份，如 <c>"2024"</c>；为 <c>null</c> 时默认当年。</param>
+    /// <param name="yearType">年份类型，<c>"report"</c> 表示报告期，<c>"operate"</c> 表示实施日期。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行股息分红数据。</returns>
     public async IAsyncEnumerable<DividendRow> QueryDividendDataAsync(
         string code,
         string? year = null,
@@ -74,6 +79,11 @@ public partial class BaostockClient
     /// <summary>
     /// 查询复权因子。MSG 15/16。
     /// </summary>
+    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行复权因子数据。</returns>
     public async IAsyncEnumerable<AdjustFactorRow> QueryAdjustFactorAsync(
         string code,
         string? startDate = null,
@@ -128,36 +138,66 @@ public partial class BaostockClient
     }
 
     /// <summary>查询季频盈利能力。MSG 17/18。</summary>
+    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="year">年份，如 2024。</param>
+    /// <param name="quarter">季度（1–4）。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行盈利能力数据。</returns>
     public IAsyncEnumerable<ProfitRow> QueryProfitDataAsync(
         string code, int year, int quarter, CancellationToken ct = default)
         => QuerySeasonAsync("query_profit_data", MessageTypes.ProfitDataRequest,
             code, year, quarter, ParseProfitRow, ct);
 
     /// <summary>查询季频营运能力。MSG 19/20。</summary>
+    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="year">年份，如 2024。</param>
+    /// <param name="quarter">季度（1–4）。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行营运能力数据。</returns>
     public IAsyncEnumerable<OperationRow> QueryOperationDataAsync(
         string code, int year, int quarter, CancellationToken ct = default)
         => QuerySeasonAsync("query_operation_data", MessageTypes.OperationDataRequest,
             code, year, quarter, ParseOperationRow, ct);
 
     /// <summary>查询季频成长能力。MSG 21/22。</summary>
+    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="year">年份，如 2024。</param>
+    /// <param name="quarter">季度（1–4）。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行成长能力数据。</returns>
     public IAsyncEnumerable<GrowthRow> QueryGrowthDataAsync(
         string code, int year, int quarter, CancellationToken ct = default)
         => QuerySeasonAsync("query_growth_data", MessageTypes.QueryGrowthDataRequest,
             code, year, quarter, ParseGrowthRow, ct);
 
     /// <summary>查询季频杜邦指数。MSG 23/24。</summary>
+    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="year">年份，如 2024。</param>
+    /// <param name="quarter">季度（1–4）。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行杜邦指数数据。</returns>
     public IAsyncEnumerable<DupontRow> QueryDupontDataAsync(
         string code, int year, int quarter, CancellationToken ct = default)
         => QuerySeasonAsync("query_dupont_data", MessageTypes.QueryDupontDataRequest,
             code, year, quarter, ParseDupontRow, ct);
 
     /// <summary>查询季频偿债能力。MSG 25/26。</summary>
+    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="year">年份，如 2024。</param>
+    /// <param name="quarter">季度（1–4）。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行偿债能力数据。</returns>
     public IAsyncEnumerable<BalanceRow> QueryBalanceDataAsync(
         string code, int year, int quarter, CancellationToken ct = default)
         => QuerySeasonAsync("query_balance_data", MessageTypes.QueryBalanceDataRequest,
             code, year, quarter, ParseBalanceRow, ct);
 
     /// <summary>查询季频现金流量。MSG 27/28。</summary>
+    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="year">年份，如 2024。</param>
+    /// <param name="quarter">季度（1–4）。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行现金流量数据。</returns>
     public IAsyncEnumerable<CashFlowRow> QueryCashFlowDataAsync(
         string code, int year, int quarter, CancellationToken ct = default)
         => QuerySeasonAsync("query_cash_flow_data", MessageTypes.QueryCashFlowDataRequest,

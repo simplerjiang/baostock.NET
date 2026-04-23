@@ -16,6 +16,14 @@ public partial class BaostockClient
     /// <summary>
     /// 查询历史 K 线数据（日/周/月频）。自动按需分页拉取，流式 yield 每行。
     /// </summary>
+    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="fields">查询字段，逗号分隔；为 <c>null</c> 时使用默认日频字段。</param>
+    /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="frequency">K 线频率（仅支持日/周/月）。</param>
+    /// <param name="adjustFlag">复权类型。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行 K 线数据。</returns>
     public async IAsyncEnumerable<KLineRow> QueryHistoryKDataPlusAsync(
         string code,
         string? fields = null,
@@ -128,6 +136,14 @@ public partial class BaostockClient
     /// <summary>
     /// 查询历史 K 线数据（分钟频：5/15/30/60 分钟）。自动按需分页拉取，流式 yield 每行。
     /// </summary>
+    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="fields">查询字段，逗号分隔；为 <c>null</c> 时使用默认分钟频字段。</param>
+    /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="frequency">K 线频率（仅支持 5/15/30/60 分钟）。</param>
+    /// <param name="adjustFlag">复权类型。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行分钟 K 线数据。</returns>
     public async IAsyncEnumerable<MinuteKLineRow> QueryHistoryKDataPlusMinuteAsync(
         string code,
         string? fields = null,

@@ -10,6 +10,11 @@ public partial class BaostockClient
     /// <summary>
     /// 查询公司业绩快报。MSG 29/30。
     /// </summary>
+    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行业绩快报数据。</returns>
     public async IAsyncEnumerable<PerformanceExpressRow> QueryPerformanceExpressReportAsync(
         string code,
         string? startDate = null,
@@ -72,6 +77,11 @@ public partial class BaostockClient
     /// <summary>
     /// 查询公司业绩预告。MSG 31/32。
     /// </summary>
+    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
+    /// <param name="ct">取消令牌。</param>
+    /// <returns>流式返回每行业绩预告数据。</returns>
     public async IAsyncEnumerable<ForecastReportRow> QueryForecastReportAsync(
         string code,
         string? startDate = null,
