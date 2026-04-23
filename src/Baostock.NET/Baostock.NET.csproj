@@ -12,13 +12,14 @@
 
   <PropertyGroup Label="Package">
     <PackageId>Baostock.NET</PackageId>
-    <Version>0.1.0-alpha</Version>
-    <Authors>kong</Authors>
-    <Description>A pure .NET 9 client for the baostock China A-share market data service.</Description>
+    <Version>0.9.0</Version>
+    <Authors>baostock.Net contributors</Authors>
+    <Description>Pure .NET 9 client for baostock China A-share market data. 1:1 coverage of the Python baostock package.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryType>git</RepositoryType>
-    <PackageTags>baostock;china;stock;a-share;market-data;finance</PackageTags>
+    <PackageProjectUrl>https://github.com/user/baostock.Net</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/user/baostock.Net</RepositoryUrl>
+    <PackageTags>baostock;china;a-share;stock;market-data;finance</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
