@@ -224,41 +224,44 @@ public partial class BaostockClient
         }
     }
 
-    private static MinuteKLineRow ParseMinuteKLineRow(string[] cols)
+    internal static string SafeCol(string[] cols, int i)
+        => i < cols.Length ? cols[i] : string.Empty;
+
+    internal static MinuteKLineRow ParseMinuteKLineRow(string[] cols)
     {
         // 字段顺序：date,time,code,open,high,low,close,volume,amount,adjustflag
         return new MinuteKLineRow(
-            Date: DateOnly.ParseExact(cols[0], "yyyy-MM-dd", CultureInfo.InvariantCulture),
-            Time: cols[1],
-            Code: cols[2],
-            Open: ParseNullableDecimal(cols[3]),
-            High: ParseNullableDecimal(cols[4]),
-            Low: ParseNullableDecimal(cols[5]),
-            Close: ParseNullableDecimal(cols[6]),
-            Volume: ParseNullableLong(cols[7]),
-            Amount: ParseNullableDecimal(cols[8]),
-            AdjustFlag: (AdjustFlag)int.Parse(cols[9], CultureInfo.InvariantCulture));
+            Date: DateOnly.ParseExact(SafeCol(cols, 0), "yyyy-MM-dd", CultureInfo.InvariantCulture),
+            Time: SafeCol(cols, 1),
+            Code: SafeCol(cols, 2),
+            Open: ParseNullableDecimal(SafeCol(cols, 3)),
+            High: ParseNullableDecimal(SafeCol(cols, 4)),
+            Low: ParseNullableDecimal(SafeCol(cols, 5)),
+            Close: ParseNullableDecimal(SafeCol(cols, 6)),
+            Volume: ParseNullableLong(SafeCol(cols, 7)),
+            Amount: ParseNullableDecimal(SafeCol(cols, 8)),
+            AdjustFlag: SafeCol(cols, 9) is { Length: > 0 } af ? (AdjustFlag)int.Parse(af, CultureInfo.InvariantCulture) : AdjustFlag.NoAdjust);
     }
 
-    private static KLineRow ParseKLineRow(string[] cols)
+    internal static KLineRow ParseKLineRow(string[] cols)
     {
         // 字段顺序与 DefaultDailyFields 一致：
         // date,code,open,high,low,close,preclose,volume,amount,adjustflag,turn,tradestatus,pctChg,isST
         return new KLineRow(
-            Date: DateOnly.ParseExact(cols[0], "yyyy-MM-dd", CultureInfo.InvariantCulture),
-            Code: cols[1],
-            Open: ParseNullableDecimal(cols[2]),
-            High: ParseNullableDecimal(cols[3]),
-            Low: ParseNullableDecimal(cols[4]),
-            Close: ParseNullableDecimal(cols[5]),
-            PreClose: ParseNullableDecimal(cols[6]),
-            Volume: ParseNullableLong(cols[7]),
-            Amount: ParseNullableDecimal(cols[8]),
-            AdjustFlag: (AdjustFlag)int.Parse(cols[9], CultureInfo.InvariantCulture),
-            Turn: ParseNullableDecimal(cols[10]),
-            TradeStatus: (TradeStatus)int.Parse(cols[11], CultureInfo.InvariantCulture),
-            PctChg: ParseNullableDecimal(cols[12]),
-            IsST: cols[13] == "1");
+            Date: DateOnly.ParseExact(SafeCol(cols, 0), "yyyy-MM-dd", CultureInfo.InvariantCulture),
+            Code: SafeCol(cols, 1),
+            Open: ParseNullableDecimal(SafeCol(cols, 2)),
+            High: ParseNullableDecimal(SafeCol(cols, 3)),
+            Low: ParseNullableDecimal(SafeCol(cols, 4)),
+            Close: ParseNullableDecimal(SafeCol(cols, 5)),
+            PreClose: ParseNullableDecimal(SafeCol(cols, 6)),
+            Volume: ParseNullableLong(SafeCol(cols, 7)),
+            Amount: ParseNullableDecimal(SafeCol(cols, 8)),
+            AdjustFlag: SafeCol(cols, 9) is { Length: > 0 } af ? (AdjustFlag)int.Parse(af, CultureInfo.InvariantCulture) : AdjustFlag.NoAdjust,
+            Turn: ParseNullableDecimal(SafeCol(cols, 10)),
+            TradeStatus: SafeCol(cols, 11) is { Length: > 0 } ts ? (TradeStatus)int.Parse(ts, CultureInfo.InvariantCulture) : TradeStatus.Suspended,
+            PctChg: ParseNullableDecimal(SafeCol(cols, 12)),
+            IsST: SafeCol(cols, 13) == "1");
     }
 
     private static decimal? ParseNullableDecimal(string value)

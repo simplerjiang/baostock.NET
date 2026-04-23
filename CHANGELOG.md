@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.1 — 2026-04-23
+
+### Fixed
+
+- **KLine 解析 IndexOutOfRangeException**：`ParseKLineRow` 和 `ParseMinuteKLineRow` 在服务器返回列数不足时抛出 `IndexOutOfRangeException`，现已通过 `SafeCol` 辅助方法添加边界保护，缺失字段回退为默认值（`null` / `NoAdjust` / `Suspended` / `false`）。
+
+### Added
+
+- 8 个边界场景单元测试覆盖 `ParseKLineRow` / `ParseMinuteKLineRow` 的列数不足、空字段、完整列等情况。
+- `InternalsVisibleTo` 支持，允许测试项目直接测试内部解析方法。
+
 ## [1.0.0] - 2026-04-23
 
 ### Added
