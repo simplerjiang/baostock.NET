@@ -1,0 +1,121 @@
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using Baostock.NET.Models;
+using Baostock.NET.Protocol;
+
+namespace Baostock.NET.Client;
+
+public partial class BaostockClient
+{
+    /// <summary>
+    /// 查询终止上市股票列表。MSG 67/68。
+    /// </summary>
+    public async IAsyncEnumerable<SpecialStockRow> QueryTerminatedStocksAsync(
+        string? date = null,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var row in QuerySpecialStocksAsync(
+            "query_terminated_stocks",
+            MessageTypes.QueryTerminatedStocksRequest,
+            date, ct).ConfigureAwait(false))
+        {
+            yield return row;
+        }
+    }
+
+    /// <summary>
+    /// 查询暂停上市股票列表。MSG 69/70。
+    /// </summary>
+    public async IAsyncEnumerable<SpecialStockRow> QuerySuspendedStocksAsync(
+        string? date = null,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var row in QuerySpecialStocksAsync(
+            "query_suspended_stocks",
+            MessageTypes.QuerySuspendedStocksRequest,
+            date, ct).ConfigureAwait(false))
+        {
+            yield return row;
+        }
+    }
+
+    /// <summary>
+    /// 查询 ST 股票列表。MSG 71/72。
+    /// </summary>
+    public async IAsyncEnumerable<SpecialStockRow> QueryStStocksAsync(
+        string? date = null,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var row in QuerySpecialStocksAsync(
+            "query_st_stocks",
+            MessageTypes.QueryStStocksRequest,
+            date, ct).ConfigureAwait(false))
+        {
+            yield return row;
+        }
+    }
+
+    /// <summary>
+    /// 查询 *ST 股票列表。MSG 73/74。
+    /// </summary>
+    public async IAsyncEnumerable<SpecialStockRow> QueryStarStStocksAsync(
+        string? date = null,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var row in QuerySpecialStocksAsync(
+            "query_starst_stocks",
+            MessageTypes.QueryStarStStocksRequest,
+            date, ct).ConfigureAwait(false))
+        {
+            yield return row;
+        }
+    }
+
+    private async IAsyncEnumerable<SpecialStockRow> QuerySpecialStocksAsync(
+        string method,
+        string requestMsgType,
+        string? date,
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        await EnsureLoggedInAsync(ct).ConfigureAwait(false);
+
+        var curPage = 1;
+        while (true)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var body = string.Join(Framing.MessageSplit,
+                method,
+                Session.UserId ?? "anonymous",
+                curPage.ToString(CultureInfo.InvariantCulture),
+                Framing.DefaultPerPageCount.ToString(CultureInfo.InvariantCulture),
+                date ?? string.Empty);
+
+            var frame = FrameCodec.EncodeFrame(requestMsgType, body);
+            await _transport.SendAsync(frame, ct).ConfigureAwait(false);
+
+            var responseFrame = await _transport.ReceiveFrameAsync(ct).ConfigureAwait(false);
+            var (_, respBody) = DecodeResponseFrame(responseFrame);
+
+            var page = ResponseParser.ParsePage(respBody);
+
+            if (!string.Equals(page.ErrorCode, "0", StringComparison.Ordinal))
+            {
+                throw new BaostockException(page.ErrorCode, page.ErrorMessage);
+            }
+
+            foreach (var row in page.Rows)
+            {
+                yield return new SpecialStockRow(
+                    UpdateDate: row[0],
+                    Code: row[1],
+                    CodeName: row[2]);
+            }
+
+            if (page.Rows.Count < page.PerPageCount)
+                break;
+
+            curPage++;
+        }
+    }
+}
