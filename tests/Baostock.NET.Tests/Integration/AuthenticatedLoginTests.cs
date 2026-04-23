@@ -6,7 +6,9 @@ namespace Baostock.NET.Tests.Integration;
 /// <summary>
 /// 联网集成测试：用真实账号登录。凭据仅通过环境变量 BAOSTOCK_USER / BAOSTOCK_PASS 传入；
 /// 任一缺失即 Skip，绝不在源码中硬编码任何回退凭据。
+/// 通过 <c>[Collection("Live")]</c> 确保与其他 Live 测试串行执行，但使用独立 client。
 /// </summary>
+[Collection("Live")]
 [Trait("Category", "Live")]
 [Trait("RequiresCredentials", "true")]
 public class AuthenticatedLoginTests

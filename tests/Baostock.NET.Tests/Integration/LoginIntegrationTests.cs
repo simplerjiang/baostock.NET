@@ -4,21 +4,20 @@ namespace Baostock.NET.Tests.Integration;
 
 /// <summary>
 /// 联网集成测试。CI 默认通过 <c>--filter "Category!=Live"</c> 跳过；本地必跑。
+/// 通过 <c>[Collection("Live")]</c> 与其他 Live 测试共享会话、串行执行。
 /// </summary>
+[Collection("Live")]
 [Trait("Category", "Live")]
 public class LoginIntegrationTests
 {
+    private readonly LiveTestFixture _fixture;
+
+    public LoginIntegrationTests(LiveTestFixture fixture) => _fixture = fixture;
+
     [Fact]
-    public async Task Anonymous_Login_Logout_Roundtrip_Succeeds()
+    public void Fixture_Client_Is_LoggedIn()
     {
-        await using var client = new BaostockClient();
-
-        var login = await client.LoginAsync();
-        Assert.Equal("0", login.ErrorCode);
-        Assert.True(client.Session.IsLoggedIn);
-        Assert.Equal("anonymous", client.Session.UserId);
-
-        await client.LogoutAsync();
-        Assert.False(client.Session.IsLoggedIn);
+        Assert.True(_fixture.Client.Session.IsLoggedIn);
+        Assert.Equal("anonymous", _fixture.Client.Session.UserId);
     }
 }

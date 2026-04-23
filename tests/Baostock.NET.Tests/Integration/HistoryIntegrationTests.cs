@@ -4,14 +4,18 @@ using Baostock.NET.Tests.Queries;
 
 namespace Baostock.NET.Tests.Integration;
 
+[Collection("Live")]
 [Trait("Category", "Live")]
 public class HistoryIntegrationTests
 {
+    private readonly LiveTestFixture _fixture;
+
+    public HistoryIntegrationTests(LiveTestFixture fixture) => _fixture = fixture;
+
     [Fact]
     public async Task QueryHistoryKDataPlus_Daily_ReturnsRows()
     {
-        await using var client = await BaostockClient.CreateAndLoginAsync();
-        var rows = await client.QueryHistoryKDataPlusAsync(
+        var rows = await _fixture.Client.QueryHistoryKDataPlusAsync(
             "sh.600000",
             startDate: "2024-01-01",
             endDate: "2024-01-31",
