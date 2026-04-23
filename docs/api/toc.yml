@@ -1,0 +1,76 @@
+- name: 登录 / 登出
+  items:
+    - name: login / logout
+      href: login.md
+
+- name: 行情数据
+  items:
+    - name: 历史 K 线 (history_k_data)
+      href: history-k-data.md
+    - name: 复权因子 (adjust_factor)
+      href: adjust-factor.md
+
+- name: 指数成分股
+  items:
+    - name: 沪深 300 成分股
+      href: hs300-stocks.md
+    - name: 上证 50 成分股
+      href: sz50-stocks.md
+    - name: 中证 500 成分股
+      href: zz500-stocks.md
+
+- name: 市场信息
+  items:
+    - name: 全部股票
+      href: all-stock.md
+    - name: 股票基本信息
+      href: stock-basic.md
+    - name: 行业分类
+      href: stock-industry.md
+    - name: 交易日查询
+      href: trade-dates.md
+    - name: 停牌股票
+      href: suspended-stocks.md
+    - name: ST 股票
+      href: st-stocks.md
+    - name: "*ST 股票"
+      href: starst-stocks.md
+    - name: 终止上市股票
+      href: terminated-stocks.md
+
+- name: 财务数据
+  items:
+    - name: 盈利能力 (profit_data)
+      href: profit-data.md
+    - name: 营运能力 (operation_data)
+      href: operation-data.md
+    - name: 成长能力 (growth_data)
+      href: growth-data.md
+    - name: 偿债能力 (balance_data)
+      href: balance-data.md
+    - name: 现金流量 (cash_flow_data)
+      href: cash-flow-data.md
+    - name: 杜邦指标 (dupont_data)
+      href: dupont-data.md
+
+- name: 公司报告
+  items:
+    - name: 业绩快报
+      href: performance-express-report.md
+    - name: 业绩预告
+      href: forecast-report.md
+    - name: 分红数据
+      href: dividend-data.md
+
+- name: 宏观经济
+  items:
+    - name: 存款利率
+      href: deposit-rate.md
+    - name: 贷款利率
+      href: loan-rate.md
+    - name: 存款准备金率
+      href: reserve-ratio.md
+    - name: 货币供应量 (月)
+      href: money-supply-month.md
+    - name: 货币供应量 (年)
+      href: money-supply-year.md

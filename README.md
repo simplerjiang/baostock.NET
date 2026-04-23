@@ -5,6 +5,7 @@
 
 [![NuGet](https://img.shields.io/nuget/v/Baostock.NET.svg)](https://www.nuget.org/packages/Baostock.NET)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://simplerjiang.github.io/baostock.NET/)
 
 ## 快速开始
 

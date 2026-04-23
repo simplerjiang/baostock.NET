@@ -47,3 +47,7 @@ scratch/
 # Capture / fixtures binary artifacts (keep markdown indices)
 tools/capture-fixtures/__pycache__/
 
+# DocFX output
+_site/
+/api/
+
