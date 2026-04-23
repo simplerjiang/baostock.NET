@@ -1,0 +1,8 @@
+name=query_history_k_data_plus_5min
+error_code=0
+error_msg=success
+fields=['date', 'time', 'code', 'open', 'high', 'low', 'close', 'volume', 'amount', 'adjustflag']
+rows=96
+req_bytes=170
+resp_bytes=2225
+first_row=['2024-01-02', '20240102093500000', 'sh.600000', '6.2070789300', '6.2164410400', '6.1883547100', '6.1977168200', '1902300', '12603192.0000', '2']

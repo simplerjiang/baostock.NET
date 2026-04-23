@@ -101,3 +101,54 @@ await foreach (var row in client.QueryHistoryKDataPlusAsync(
 - 周线、月线数据从 1990-12-19 开始
 - 5/15/30/60 分钟线数据从 1999-07-26 开始
 - 数据每日 18:00 左右更新
+
+## 分钟频率
+
+### 方法签名
+
+```csharp
+public async IAsyncEnumerable<MinuteKLineRow> QueryHistoryKDataPlusMinuteAsync(
+    string code,
+    string? fields = null,
+    string? startDate = null,
+    string? endDate = null,
+    KLineFrequency frequency = KLineFrequency.FiveMinute,
+    AdjustFlag adjustFlag = AdjustFlag.PreAdjust,
+    CancellationToken ct = default)
+```
+
+### MinuteKLineRow 返回字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| Date | DateOnly | 交易日期 |
+| Time | string | Bar 结束时间，17 位 `YYYYMMDDHHmmssSSS` 格式，如 `"20240102093500000"` |
+| Code | string | 证券代码 |
+| Open | decimal? | 开盘价 |
+| High | decimal? | 最高价 |
+| Low | decimal? | 最低价 |
+| Close | decimal? | 收盘价 |
+| Volume | long? | 成交量（股） |
+| Amount | decimal? | 成交额（元） |
+| AdjustFlag | AdjustFlag | 复权状态 |
+
+> **`Time` 字段说明**：17 位字符串，格式为 `YYYYMMDDHHmmssSSS`（年月日时分秒毫秒），表示该 bar 的结束时间。使用 `string` 而非 `TimeOnly`，因为该格式含日期与毫秒，用户可按需自行转换。
+
+### 使用示例
+
+```csharp
+await using var client = await BaostockClient.CreateAndLoginAsync();
+
+await foreach (var row in client.QueryHistoryKDataPlusMinuteAsync(
+    "sh.600000",
+    startDate: "2024-01-02",
+    endDate: "2024-01-03",
+    frequency: KLineFrequency.FiveMinute))
+{
+    Console.WriteLine($"{row.Date} {row.Time} 开:{row.Open} 高:{row.High} 低:{row.Low} 收:{row.Close} 量:{row.Volume}");
+}
+```
+
+### 数据范围
+
+近 5 年（2020-01-03 至今），数据每日 18:00 左右更新。
