@@ -188,7 +188,14 @@ v1.0 必交付共 **27 个**公开方法：`login`、`logout`、`set_API_key`（
 
 **错误帧约定**（依据 [tests/Fixtures/_candidates/](../tests/Fixtures/_candidates/) 的实测）：服务端遇到未知或已下线的 `MSG` 类型**不会断连**，而是返回一个 `MSG=04`（`MESSAGE_TYPE_EXCEPTIONS`）的错误响应帧，body 形如 `<error_code>\x01<error_msg>`（例如 `10004020\x01错误的消息类型`）。.NET `BaostockTransport` 在收到 `MSG=04` 帧时**必须**解析 body 的前两个 `\x01` 分段为 `(error_code, error_msg)` 并抛出 `BaostockException(error_code, error_msg)`，**不得**把它当作正常响应交给上层 query 解码器。
 
-### 3.7 .NET 协议层契约（强约束）
+### 3.7 服务端 BodyLength 字段不可信（实测）
+
+服务端响应头里的 `BodyLength` 字段，对**含中文字符的 body** 填的是**字符数**而非 UTF-8 字节数（典型差异：54 vs 70）。但 CRC32 仍然按真实字节计算。因此 .NET 实现**不能**用 `BodyLength` 切 body：
+- 非压缩响应：靠 `<![CDATA[]]>\n` 物理结尾标记收流
+- body 与 CRC 的边界：靠**最后一个 `\x01`**（CRC 是纯 ASCII 数字，永不含 `\x01`）
+- 已通过 v0.2.0 补测验证（commit `6d993bb`）。
+
+### 3.8 .NET 协议层契约（强约束）
 
 - `BaostockProtocol`：纯静态/纯函数层，负责帧编解码、CRC32、zlib，**不引用 socket、不引用 client、可单测**
 - `BaostockTransport`：抽象 `ITransport { Task ConnectAsync; Task SendAsync(ReadOnlyMemory<byte>); ValueTask<ReadOnlyMemory<byte>> ReceiveOneFrameAsync(); }`，默认实现 `TcpTransport`，测试可注入 `FixtureTransport`

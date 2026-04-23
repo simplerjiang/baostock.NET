@@ -16,7 +16,7 @@ public sealed record LoginResult(string ErrorCode, string ErrorMessage, string? 
 /// Baostock 客户端入口。负责会话生命周期（登录/登出）与帧编解码协调。
 /// 真正的字节级 I/O 委托给 <see cref="ITransport"/>，便于注入 fake 测试。
 /// </summary>
-public sealed class BaostockClient : IAsyncDisposable
+public sealed partial class BaostockClient : IAsyncDisposable
 {
     private readonly ITransport _transport;
     private readonly string? _autoUserId;
