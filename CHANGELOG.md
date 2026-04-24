@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - v1.3.0
+## v1.3.0 — 2026-04-24
 
 ### 新增（HTTP 多源扩展）
 
@@ -37,6 +37,8 @@ All notable changes to this project will be documented in this file.
 - 财报字段：不同公司类型（工 / 银 / 证 / 保）字段集差异较大，`RawFields` 保留原始 key/value 兜底
 - 巨潮 PDF：极少数老公告 `adjunctUrl` 为空或 302 重定向，当前不自动 follow
 - 无 Hedged 的 Cninfo：单源，注意健康监控（后续版本可能加备用源）
+- 银行类股票（如工行 SH601398）利润表 `totalOperateIncome` 字段为空 — 上游 Sina 银行模板原生不含 `BIZTOTINCO`，`operateIncome`（对应 `BIZINCO`）仍填充。v1.3.1 将加自动复制。
+- `README.UserAgentTest.md` 模块 I 暂未强制覆盖创业板 / 科创板 / 北交所硬性用例，v1.3.1 补齐。
 
 ## v1.2.0 — 2026-04-24
 

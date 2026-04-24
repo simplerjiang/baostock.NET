@@ -7,10 +7,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://simplerjiang.github.io/baostock.NET/)
 
-> **🚧 v1.3.0 已进入最后验收**（HTTP 多源扩展）：财报三表东财 + 新浪双源对冲 / 巨潮公告检索 + PDF 下载（Range 断点续传） / TestUI 新增 5 个端点。零 BREAKING，向后兼容 v1.2.0。
+> **🎉 v1.3.0 已发布**（2026-04-24，HTTP 多源扩展）：财报三表东财 + 新浪双源对冲 / 巨潮公告检索 + PDF 下载（Range 断点续传） / TestUI 新增 5 个端点。零 BREAKING，向后兼容 v1.2.0。
 > 详见 [v1.3.0 专集](docs/v1.3.0/README.md)。
 >
-> **🎉 v1.2.0 正式发布**（2026-04-24）：新增三源实时行情 + 双源历史 K 线 + TCP 自愈 + TestUI 子项目。
+> **v1.2.0 发布**（2026-04-24）：新增三源实时行情 + 双源历史 K 线 + TCP 自愈 + TestUI 子项目。
 > 包含 4 条 BREAKING CHANGES（代码格式 / 异常类型 / Models 输出 / IsLoggedIn 语义）。
 > 详见 [v1.2.0 专集](docs/v1.2.0/README.md) 与 [CHANGELOG](CHANGELOG.md)。
 
