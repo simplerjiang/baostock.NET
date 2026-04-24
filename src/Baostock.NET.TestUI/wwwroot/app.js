@@ -175,6 +175,7 @@ function selectEndpoint(ep, itemEl) {
   document.getElementById("ep-stats").textContent = "";
   document.getElementById("ep-result").textContent = "";
   document.getElementById("show-all-btn").hidden = true;
+  hideDownloads();
 }
 
 document.getElementById("send-btn").addEventListener("click", async () => {
@@ -250,6 +251,9 @@ document.getElementById("send-btn").addEventListener("click", async () => {
   } else {
     result.textContent = json;
   }
+
+  // v1.3.0 Sprint 3：巨潮公告端点成功返回时，渲染每行 PDF 下载链接。
+  renderCninfoDownloads(ep, resp);
 });
 
 async function postJson(url, body) {
@@ -259,6 +263,43 @@ async function postJson(url, body) {
     body: JSON.stringify(body || {}),
   });
   return r.json();
+}
+
+// ── cninfo pdf download helpers ─────────────────────
+function hideDownloads() {
+  const box = document.getElementById("ep-downloads");
+  const list = document.getElementById("ep-downloads-list");
+  if (box) box.hidden = true;
+  if (list) list.innerHTML = "";
+}
+
+function renderCninfoDownloads(ep, resp) {
+  hideDownloads();
+  if (!ep || ep.path !== "/api/cninfo/announcements") return;
+  if (!resp || resp.ok !== true) return;
+  const rows = resp.data;
+  if (!Array.isArray(rows) || rows.length === 0) return;
+
+  const box = document.getElementById("ep-downloads");
+  const list = document.getElementById("ep-downloads-list");
+  if (!box || !list) return;
+  list.innerHTML = "";
+  for (const row of rows) {
+    // 字段可能是 camelCase（System.Text.Json 默认驼峰化 PascalCase 属性名）。
+    const adjunctUrl = row.adjunctUrl || row.AdjunctUrl;
+    const title = row.title || row.Title || "(无标题)";
+    const date = row.publishDate || row.PublishDate || "";
+    if (!adjunctUrl) continue;
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = "/api/cninfo/pdf-download?adjunctUrl=" + encodeURIComponent(adjunctUrl);
+    a.textContent = `⬇ ${date}  ${title}`;
+    a.target = "_blank";
+    a.rel = "noopener";
+    li.appendChild(a);
+    list.appendChild(li);
+  }
+  if (list.children.length > 0) box.hidden = false;
 }
 
 // ── tabs ────────────────────────────────────────────

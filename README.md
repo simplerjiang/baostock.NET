@@ -7,6 +7,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://simplerjiang.github.io/baostock.NET/)
 
+> **🚧 v1.3.0 已进入最后验收**（HTTP 多源扩展）：财报三表东财 + 新浪双源对冲 / 巨潮公告检索 + PDF 下载（Range 断点续传） / TestUI 新增 5 个端点。零 BREAKING，向后兼容 v1.2.0。
+> 详见 [v1.3.0 专集](docs/v1.3.0/README.md)。
+>
 > **🎉 v1.2.0 正式发布**（2026-04-24）：新增三源实时行情 + 双源历史 K 线 + TCP 自愈 + TestUI 子项目。
 > 包含 4 条 BREAKING CHANGES（代码格式 / 异常类型 / Models 输出 / IsLoggedIn 语义）。
 > 详见 [v1.2.0 专集](docs/v1.2.0/README.md) 与 [CHANGELOG](CHANGELOG.md)。
@@ -139,6 +142,50 @@ foreach (var r in rows.Take(3))
 // Sprint 3 计划接入替代源补齐。详见 CHANGELOG v1.2.0-preview2 Notes。
 ```
 
+```csharp
+// 财报三表：东财 + 新浪双源对冲（v1.3.0）
+using Baostock.NET.Financials;
+
+await using var client = await BaostockClient.CreateAndLoginAsync();
+var req = new FinancialStatementRequest("SH600519");
+var balance = await client.QueryFullBalanceSheetAsync(req);
+foreach (var r in balance.Take(3))
+    Console.WriteLine($"{r.ReportDate} 总资产={r.TotalAssets:N0} 总负债={r.TotalLiabilities:N0} 来源={r.Source}");
+
+var income = await client.QueryFullIncomeStatementAsync(req);
+var cashflow = await client.QueryFullCashFlowAsync(req);
+```
+
+```csharp
+// 巨潮公告检索（v1.3.0）
+using Baostock.NET.Cninfo;
+
+var cninfoReq = new CninfoAnnouncementRequest(
+    Code: "SH600519",
+    Category: CninfoAnnouncementCategory.AnnualReport,
+    StartDate: new DateOnly(2024, 1, 1),
+    EndDate: null);
+var announcements = await client.QueryAnnouncementsAsync(cninfoReq);
+foreach (var a in announcements.Take(5))
+    Console.WriteLine($"{a.PublishDate} {a.Title} -> {a.FullPdfUrl}");
+```
+
+```csharp
+// 巨潮 PDF 下载（支持断点续传）（v1.3.0）
+var first = announcements[0];
+// 方式 A：流式读到内存 / 上游管道
+await using (var pdfStream = await client.DownloadPdfAsync(first.AdjunctUrl))
+{
+    // 透传、上传、入库……
+}
+// 方式 B：直接落盘；resume=true 时按已存在文件大小发起 Range 续传
+var bytes = await client.DownloadPdfToFileAsync(
+    first.AdjunctUrl,
+    destinationPath: $"./pdf/{first.AnnouncementId}.pdf",
+    resume: true);
+Console.WriteLine($"written: {bytes} bytes");
+```
+
 ## 特性
 
 ### 核心
@@ -154,6 +201,11 @@ foreach (var r in rows.Take(3))
 - **TCP 自愈** — 半死检测（`socket.Poll` + `IsConnected` 属性），断线后自动 reconnect + relogin（CAS 线程安全，最多 1 次重试）
 - **统一证券代码格式** — 东财风格 `SH600519` 为标准；`CodeFormatter` 向后兼容 `sh.600519` / `sh600519` / `600519.SH` / `1.600519` 等格式
 - **TestUI 子项目** — Web 前端 + minimal API，37 endpoint + 压测面板，用于交易员手动验收 + 开发者冒烟 + 小规模压测
+
+### v1.3.0 新增（HTTP 多源扩展）
+- **财报三表完整查询** — `QueryFullBalanceSheetAsync` / `QueryFullIncomeStatementAsync` / `QueryFullCashFlowAsync`，东财 P=0 + 新浪 P=1 双源 hedge（500ms），零 BREAKING
+- **巨潮公告检索 + PDF 下载** — `QueryAnnouncementsAsync` 按分类（年报 / 半年报 / 季报 / 业绩预告 / 临时公告）检索；`DownloadPdfAsync` / `DownloadPdfToFileAsync` 支持 `Range` 断点续传（`206 Partial Content`）
+- **TestUI 新端点** — `/api/financial/*`（3 个）+ `/api/cninfo/announcements`（POST）+ `/api/cninfo/pdf-download`（GET 流式）
 
 ## TestUI 子项目（v1.2.0 新增）
 
@@ -188,6 +240,7 @@ dotnet test --filter "Category=Live"           # 联网集成测试
 
 ## 文档索引
 
+- [v1.3.0 专集](docs/v1.3.0/README.md) — 财报三表 / 巨潮 PDF / TestUI 新端点 / 从 v1.2.0 迁移
 - [v1.2.0 专集](docs/v1.2.0/README.md) — 架构 / 数据源 / 迁移指南 / TestUI 使用
 - [入门指南](docs/getting-started.md) — 安装、Session、IAsyncEnumerable、错误处理
 - [CHANGELOG](CHANGELOG.md) — 各版本变更摘要

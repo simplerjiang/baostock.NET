@@ -211,6 +211,38 @@ app.MapPost("/api/loadtest/run", async (LoadTestRequest? req, BaostockClient cli
     }
 });
 
+// ── /api/cninfo/pdf-download ─────────────────────────
+// v1.3.0 Sprint 3：流式下载巨潮公告 PDF。
+// GET 便于浏览器直接 <a href> 触发下载；不走 EndpointRegistry（那是 POST + ApiResult 模式）。
+// BaostockClient 复用 DI 单例，避免重复建 HttpClient。
+app.MapGet("/api/cninfo/pdf-download", async (string? adjunctUrl, BaostockClient client, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(adjunctUrl))
+    {
+        return Results.BadRequest(new { ok = false, error = "adjunctUrl is required" });
+    }
+    try
+    {
+        var stream = await client.DownloadPdfAsync(adjunctUrl, rangeStart: null, ct).ConfigureAwait(false);
+        var fileName = Path.GetFileName(adjunctUrl.TrimEnd('/'));
+        if (string.IsNullOrWhiteSpace(fileName) || !fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            fileName = $"announcement-{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
+        }
+        Console.WriteLine($"[cninfo] pdf-download {adjunctUrl} -> {fileName}");
+        return Results.File(stream, "application/pdf", fileName);
+    }
+    catch (OperationCanceledException)
+    {
+        throw;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[cninfo] pdf-download FAILED: {adjunctUrl}: {ex.GetType().Name}: {ex.Message}");
+        return Results.Problem(detail: ex.Message, statusCode: 502, title: "cninfo pdf download failed");
+    }
+});
+
 // fallback root → static index
 app.MapFallbackToFile("index.html");
 

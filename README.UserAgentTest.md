@@ -1,6 +1,6 @@
 # Baostock.NET 用户验收测试手册
 
-> 版本：v1.2.0（含 Sprint 2.5 批 3 修复）
+> 版本：v1.3.0（含 Sprint 3 财报三表 + 巨潮公告/PDF）
 > 最近更新：2026-04-24
 
 ## 适用范围
@@ -138,6 +138,29 @@ v1.2.0-preview3 已知缺陷：socket 死后 `/api/session/login` 仍返回 `ok=
 | F2 | 直接 curl，body `{"targetPath":"/api/baostock/metadata/trade-dates","concurrency":1,"mode":"count","totalRequests":300}` | HTTP 400 + `error` 含 `heavy load (>200 requests or >30s duration)` |
 | F3 | 同时双开两个压测（连续两次 POST `/api/loadtest/run`，第二个不等第一个完成） | 第二个返回 HTTP 409 `another load test is running` |
 | F4 | curl `POST /api/loadtest/run` body `{"targetPath":"...","concurrency":200,...}` | HTTP 400 `concurrency must be 1..100` |
+
+### 模块 H — 财报三表（v1.3.0 新增，HTTP 多源对冲）
+
+> 硬规则：**至少 2 轮 UR 验证**（第二轮建议换一只银行 / 证券股，例如 `SZ000001` / `SH601398` / `SH600030`，触发 `CompanyType` 自动嗅探）。
+
+| # | 操作 | 期望 | 失败分流 |
+|---|---|---|---|
+| H1 | 左侧 sidebar 切到 `financial` 分组，选 `QueryFullBalanceSheetAsync`，code=`SH600519`，其余默认（`reportDates` 留空、`dateType=ByReport`、`reportKind=Cumulative`、`companyType=Auto`），点 **Send** | `ok=true`，`rowCount ≥ 4`（近几年 4~8 份报告），每条含 `reportDate` / `totalAssets` / `totalLiabilities` / `totalEquity` 非 null，`source` 为 `EastMoney` 或 `Sina` | 超时或返回 0 行 → 直接记 bug，**不 retry**；若仅 `source=Sina` 全覆盖 → 记 hedge 退化（minor） |
+| H2 | 选 `QueryFullIncomeStatementAsync`，code=`SH600519`，`reportDates`=`2024-12-31,2024-09-30`（逗号分隔），Send | `ok=true rowCount=2`，两条分别对应年报 / 三季报，`totalOperateIncome` / `netProfit` / `parentNetProfit` 非 null；`reportTitle` 含 "年报" / "三季报" 字样 | reportDates 未生效（返回 4+ 条）→ 记 bug |
+| H3 | 选 `QueryFullCashFlowAsync`，code=`SZ000001`（平安银行，银行类）—— **触发公司类型差异**，Send | `ok=true rowCount ≥ 1`；允许大量字段为 null（银行现金流量表结构与一般工商业差异大），但 `rawFields` 字典不为空，`netcashOperate` 通常有值 | `rawFields` 也为空 → 记 bug（解析失败） |
+| H4 | 性能观察：任一上述端点 Send，**首次** ≤ 10s（含对冲 + 500ms hedge 间隔 + 冷启动），**后续同 code** ≤ 3s | 首次 timeout（> 10s 但仍 ok=true）仅记 minor | 持续 timeout 或 `errorType=AllSourcesFailedException` → blocker |
+
+### 模块 I — 巨潮公告 + PDF 下载（v1.3.0 新增，单源）
+
+> 硬规则：**至少 2 轮 UR 验证**（第二轮换 `SZ000001` + `category=SemiAnnualReport`，验证 `column` 参数按交易所切换正确）。
+
+| # | 操作 | 期望 | 失败分流 |
+|---|---|---|---|
+| I1 | 左侧 sidebar 切到 `cninfo` 分组，选 `QueryAnnouncementsAsync`，code=`SH600519`，`category=AnnualReport`，`startDate=2024-01-01`，`endDate` 留空 / 今天，`pageNum=1`，`pageSize=30`，Send | `ok=true rowCount ≥ 1`，`data[]` 每条含 `announcementId` / `title`（含 "年报"）/ `publishDate` / `adjunctUrl`（以 `finalpage/` 之类路径开头）/ `fullPdfUrl`（以 `http://static.cninfo.com.cn/` 开头） | 列表为空（rowCount=0）→ 记 bug（贵州茅台近年必有年报） |
+| I2 | 前端自动在 I1 的结果旁渲染每一行的 **下载链接**（指向 `/api/cninfo/pdf-download?adjunctUrl=...`）。点击第一条的下载链接 | 浏览器开始下载 PDF，文件名以 `.pdf` 结尾 | 下载链接没渲染 → 记 minor（前端 bug，后端可用 curl 直连）；点击后 HTTP 502 `cninfo pdf download failed` → 检查网络到 `static.cninfo.com.cn`，连续 3 次失败记 blocker |
+| I3 | 下载完成后用 PDF reader（Edge / Acrobat）打开文件 | 文件大小 **> 100KB**（年报一般 1MB+），正文可阅读，无乱码 | 文件大小 < 10KB 或打不开 → blocker（极可能下到 HTML 错误页） |
+| I4 | 分类筛选验证：改 `category=SemiAnnualReport`，其余同 I1 | 返回的 `title` 全部含 "半年度报告" 或 "半年报" | 出现其他类型 → 记 bug（分类参数没生效） |
+| I5 | 失败分流演练：code=`SZ000001`，`category=QuarterlyReport`，`startDate=2024-01-01`，Send | `ok=true`，rowCount ≥ 1；若为 0 → 按预期行为处理（某些公司季报不一定全披露），不算 bug | — |
 
 ### Part G — 健康态快速自检（启动后 smoke test）
 

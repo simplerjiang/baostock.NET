@@ -281,3 +281,12 @@ pre#ep-result {
   max-width: 900px;
   overflow: auto;
 }
+
+/* v1.3.0 Sprint 3: cninfo pdf download list */
+.downloads { margin-top: 16px; padding: 10px; border: 1px solid #dcdcdc; border-radius: 4px; background: #fafafa; max-width: 900px; }
+.downloads h3 { margin: 0 0 6px 0; font-size: 13px; }
+.downloads ul { margin: 0; padding-left: 18px; }
+.downloads li { margin: 2px 0; font-size: 12.5px; }
+.downloads a { color: #0a66c2; text-decoration: none; }
+.downloads a:hover { text-decoration: underline; }
+

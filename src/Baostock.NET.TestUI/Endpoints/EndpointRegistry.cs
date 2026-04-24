@@ -1,5 +1,8 @@
+using System.Globalization;
 using System.Text.Json;
 using Baostock.NET.Client;
+using Baostock.NET.Cninfo;
+using Baostock.NET.Financials;
 using Baostock.NET.Models;
 
 namespace Baostock.NET.TestUI.Endpoints;
@@ -73,6 +76,8 @@ public static class EndpointRegistry
         list.AddRange(BuildMacro());
         list.AddRange(BuildSpecial());
         list.AddRange(BuildMulti());
+        list.AddRange(BuildFinancial());
+        list.AddRange(BuildCninfo());
         return list;
     }
 
@@ -561,5 +566,121 @@ public static class EndpointRegistry
         if (string.IsNullOrWhiteSpace(s)) return fallback;
         return DateTime.TryParse(s, System.Globalization.CultureInfo.InvariantCulture,
             System.Globalization.DateTimeStyles.AssumeLocal, out var dt) ? dt : fallback;
+    }
+
+    // ── financial (3) ─────────────────────────────────
+    // v1.3.0 Sprint 3：财报三表 HTTP 多源对冲（东财 P=0 + 新浪 P=1，hedge 500ms）。
+    // 绕过 baostock TCP 单连接瓶颈，可安全并发压测（Protocol="http"）。
+    private static IEnumerable<RoutedEndpoint> BuildFinancial()
+    {
+        yield return BuildFinancialEndpoint("QueryFullBalanceSheetAsync",
+            "/api/financial/balance-sheet", "完整资产负债表（东财 P=0 + 新浪 P=1 双源对冲）",
+            (c, req, ct) => c.QueryFullBalanceSheetAsync(req, ct));
+
+        yield return BuildFinancialEndpoint("QueryFullIncomeStatementAsync",
+            "/api/financial/income-statement", "完整利润表（东财 P=0 + 新浪 P=1 双源对冲）",
+            (c, req, ct) => c.QueryFullIncomeStatementAsync(req, ct));
+
+        yield return BuildFinancialEndpoint("QueryFullCashFlowAsync",
+            "/api/financial/cashflow", "完整现金流量表（东财 P=0 + 新浪 P=1 双源对冲）",
+            (c, req, ct) => c.QueryFullCashFlowAsync(req, ct));
+    }
+
+    private static RoutedEndpoint BuildFinancialEndpoint<TRow>(
+        string name, string path, string desc,
+        Func<BaostockClient, FinancialStatementRequest, CancellationToken, Task<IReadOnlyList<TRow>>> invoke)
+    {
+        return new RoutedEndpoint(
+            new EndpointDescriptor("financial", name, path, desc,
+                new[]
+                {
+                    new FieldDescriptor("code", "string", true, "SH600519"),
+                    new FieldDescriptor("reportDates", "string[]", false, "",
+                        Description: "可选，逗号分隔 yyyy-MM-dd；留空则由数据源自动拉取最近若干期"),
+                    new FieldDescriptor("dateType", "enum", false, "ByReport",
+                        new[] { "ByReport", "ByYear", "BySingleQuarter" }),
+                    new FieldDescriptor("reportKind", "enum", false, "Cumulative",
+                        new[] { "Cumulative", "SingleQuarter" }),
+                    new FieldDescriptor("companyType", "enum", false, "Auto",
+                        new[] { "Auto", "General", "Bank", "Insurance", "Securities" },
+                        Description: "Auto = 由数据源嗅探"),
+                },
+                Protocol: "http"),
+            async (body, c, ct) =>
+            {
+                var code = EndpointRunner.GetString(body, "code") ?? "SH600519";
+                var dates = ParseReportDates(EndpointRunner.GetStringArray(body, "reportDates"));
+                var dateType = EndpointRunner.GetEnum(body, "dateType", FinancialReportDateType.ByReport);
+                var kind = EndpointRunner.GetEnum(body, "reportKind", FinancialReportKind.Cumulative);
+                var ctStr = EndpointRunner.GetString(body, "companyType");
+                CompanyType? companyType = null;
+                if (!string.IsNullOrWhiteSpace(ctStr)
+                    && !string.Equals(ctStr, "Auto", StringComparison.OrdinalIgnoreCase)
+                    && Enum.TryParse<CompanyType>(ctStr, ignoreCase: true, out var ctVal))
+                {
+                    companyType = ctVal;
+                }
+                var req = new FinancialStatementRequest(code, dates, dateType, kind, companyType);
+                Console.WriteLine($"[financial] {name} code={code} dateType={dateType} kind={kind} companyType={companyType?.ToString() ?? "auto"} dates={(dates is null ? "<auto>" : string.Join(",", dates))}");
+                var rows = await invoke(c, req, ct).ConfigureAwait(false);
+                return (rows.Count, (object?)rows);
+            });
+    }
+
+    private static IReadOnlyList<DateOnly>? ParseReportDates(string[] raw)
+    {
+        if (raw.Length == 0) return null;
+        var list = new List<DateOnly>(raw.Length);
+        foreach (var s in raw)
+        {
+            if (DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+            {
+                list.Add(d);
+            }
+        }
+        return list.Count == 0 ? null : list;
+    }
+
+    // ── cninfo (1) ────────────────────────────────────
+    // v1.3.0 Sprint 3：巨潮公告索引（单源 CninfoSource，不走对冲）。
+    // PDF 下载走独立 GET /api/cninfo/pdf-download（流式），在 Program.cs 直接挂载。
+    private static IEnumerable<RoutedEndpoint> BuildCninfo()
+    {
+        yield return new RoutedEndpoint(
+            new EndpointDescriptor("cninfo", "QueryAnnouncementsAsync",
+                "/api/cninfo/announcements",
+                "查询巨潮公告列表（单源，不走对冲）。返回行含 adjunctUrl，可通过 GET /api/cninfo/pdf-download?adjunctUrl=... 下载 PDF。",
+                new[]
+                {
+                    new FieldDescriptor("code", "string", true, "SH600519"),
+                    new FieldDescriptor("category", "enum", false, "All",
+                        new[] { "All", "AnnualReport", "SemiAnnualReport", "QuarterlyReport", "PerformanceForecast", "TemporaryAnnouncement" }),
+                    new FieldDescriptor("startDate", "string", false, DaysAgo(90),
+                        Description: "yyyy-MM-dd；留空则不限"),
+                    new FieldDescriptor("endDate", "string", false, Today(),
+                        Description: "yyyy-MM-dd；留空则不限"),
+                    new FieldDescriptor("pageNum", "int", false, "1"),
+                    new FieldDescriptor("pageSize", "int", false, "30"),
+                },
+                Protocol: "http"),
+            async (body, c, ct) =>
+            {
+                var code = EndpointRunner.GetString(body, "code") ?? "SH600519";
+                var category = EndpointRunner.GetEnum(body, "category", CninfoAnnouncementCategory.All);
+                var start = ParseDateOnly(EndpointRunner.GetString(body, "startDate"));
+                var end = ParseDateOnly(EndpointRunner.GetString(body, "endDate"));
+                var pageNum = EndpointRunner.GetInt(body, "pageNum", 1);
+                var pageSize = EndpointRunner.GetInt(body, "pageSize", 30);
+                var req = new CninfoAnnouncementRequest(code, category, start, end, pageNum, pageSize);
+                Console.WriteLine($"[cninfo] announcements code={code} category={category} start={start} end={end} page={pageNum}/{pageSize}");
+                var rows = await c.QueryAnnouncementsAsync(req, ct).ConfigureAwait(false);
+                return (rows.Count, (object?)rows);
+            });
+    }
+
+    private static DateOnly? ParseDateOnly(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        return DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : null;
     }
 }

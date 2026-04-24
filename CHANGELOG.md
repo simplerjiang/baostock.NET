@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - v1.3.0
+
+### 新增（HTTP 多源扩展）
+
+- **财报三表全量查询**：`QueryFullBalanceSheetAsync` / `QueryFullIncomeStatementAsync` / `QueryFullCashFlowAsync`
+  - Hedged（东财 P=0 + 新浪 P=1，500ms 对冲）
+  - `FullBalanceSheetRow`（24 核心字段 + RawFields 兜底）
+  - `FullIncomeStatementRow`（15 字段）
+  - `FullCashFlowRow`（12 字段）
+  - 支持按年度/季度/中报筛选（`FinancialReportDateType.ByReport | ByYear | BySingleQuarter`）
+
+- **巨潮公告 + PDF 下载**：
+  - `QueryAnnouncementsAsync(request)` — 支持分类（年报 / 半年报 / 季报 / 业绩预告 / 临时公告 / All）
+  - `DownloadPdfAsync(adjunctUrl, rangeStart?)` — 返回 `Stream`，支持 `Range` 断点续传
+  - `DownloadPdfToFileAsync(adjunctUrl, dest, resume)` — 直接落盘，支持 `resume` 断点续写
+  - 源：单源（巨潮 `static.cninfo.com.cn`），`206 Partial Content` 协议
+
+### TestUI 新增
+
+- `/api/financial/balance-sheet` / `/api/financial/income-statement` / `/api/financial/cashflow`（POST）
+- `/api/cninfo/announcements`（POST）+ `/api/cninfo/pdf-download`（GET 流式）
+- Web 前端：`financial` / `cninfo` 两个新分组，公告查询成功后自动渲染 PDF 下载链接
+
+### 内部
+
+- `IFinancialStatementSource`（非泛型，3 方法）+ 私有 `FinancialStatementSourceAdapter<TRow>` 桥接 `IDataSource<,>` 喂给 `HedgedRequestRunner`
+- `CninfoAnnouncementCategory` / `CninfoAnnouncementRequest` / `CninfoAnnouncementRow` / `ICninfoSource` / `CninfoSource`
+- `CodeFormatter.CninfoOrgId` / `CninfoStock` 扩展（`gssh` / `gssz` / `gssb` 前缀）
+- 测试：+50 单测（东财 9 / 新浪 9 / 巨潮 20 / Client 13，全离线），累计 **291 passed / 0 failed / 1 skipped**（Category!=Live）
+
+### 已知限制
+
+- 财报字段：不同公司类型（工 / 银 / 证 / 保）字段集差异较大，`RawFields` 保留原始 key/value 兜底
+- 巨潮 PDF：极少数老公告 `adjunctUrl` 为空或 302 重定向，当前不自动 follow
+- 无 Hedged 的 Cninfo：单源，注意健康监控（后续版本可能加备用源）
+
 ## v1.2.0 — 2026-04-24
 
 正式版发布。v1.2.0 系列累计包含：
