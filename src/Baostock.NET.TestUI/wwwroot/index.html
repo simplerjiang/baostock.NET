@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>Baostock.NET TestUI</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Baostock.NET TestUI</h1>
+    <div id="session-bar">
+      <span>用户:</span>
+      <input id="userId" type="text" value="anonymous" />
+      <span>密码:</span>
+      <input id="password" type="text" value="123456" />
+      <button id="login-btn">Login</button>
+      <button id="logout-btn">Logout</button>
+      <button id="status-btn">Status</button>
+      <span id="session-status">未登录</span>
+      <span id="socket-indicator" class="socket-dot" title="TCP socket 健康状态">●</span>
+    </div>
+    <nav id="tabs">
+      <button id="tab-api" class="tab-btn active" data-panel="panel-api">API 调用</button>
+      <button id="tab-load" class="tab-btn" data-panel="panel-load">压测面板</button>
+    </nav>
+  </header>
+
+  <main>
+    <div id="panel-api" class="panel">
+      <aside id="endpoint-list">
+        <div class="loading">加载 endpoint metadata...</div>
+      </aside>
+
+      <section id="endpoint-detail">
+        <div id="ep-header">
+          <h2 id="ep-name">请从左侧选择一个 endpoint</h2>
+          <p id="ep-desc"></p>
+          <code id="ep-path"></code>
+        </div>
+
+        <div id="ep-banner" hidden></div>
+
+        <form id="ep-form"></form>
+
+        <div id="ep-actions">
+          <button id="send-btn" disabled>Send</button>
+        </div>
+
+        <div id="ep-stats"></div>
+        <div id="ep-result-wrap">
+          <h3>解析结果</h3>
+          <pre id="ep-result"></pre>
+          <button id="show-all-btn" hidden>查看全部</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="panel-load" class="panel hidden">
+      <section id="load-form-wrap">
+        <h2>压测面板</h2>
+        <p class="hint">
+          所有压测在后端进程内直接调用 endpoint handler（不走 HTTP 自调）。<br />
+          安全限制：concurrency &le; 100，duration &le; 300s，totalRequests &le; 100000，同时只允许 1 个任务。<br />
+          <strong>警告</strong>：不要对全表端点（如 <code>/api/baostock/metadata/all-stock</code>）跑高并发，会拖死本机和 baostock TCP 连接。
+        </p>
+        <form id="load-form">
+          <label for="lt-target">Target endpoint</label>
+          <select id="lt-target"></select>
+
+          <label for="lt-body">Body (JSON)</label>
+          <textarea id="lt-body" rows="6" spellcheck="false">{}</textarea>
+
+          <label>Mode</label>
+          <div class="radio-row">
+            <label><input type="radio" name="lt-mode" value="duration" checked /> duration</label>
+            <label><input type="radio" name="lt-mode" value="count" /> count</label>
+          </div>
+
+          <label for="lt-duration">Duration (秒)</label>
+          <input id="lt-duration" type="number" min="1" max="300" value="30" />
+
+          <label for="lt-total">TotalRequests</label>
+          <input id="lt-total" type="number" min="1" max="100000" value="1000" disabled />
+
+          <label for="lt-concurrency">Concurrency</label>
+          <input id="lt-concurrency" type="number" min="1" max="100" value="10" />
+          <span id="lt-concurrency-hint" class="input-hint" hidden></span>
+
+          <label for="lt-warmup">Warmup</label>
+          <input id="lt-warmup" type="number" min="0" max="1000" value="5" />
+
+          <div class="form-actions">
+            <button id="lt-run-btn" type="button">开始压测</button>
+            <span id="lt-target-banner" class="target-banner" hidden></span>
+            <span id="lt-status"></span>
+          </div>
+        </form>
+      </section>
+
+      <section id="load-result-wrap" hidden>
+        <h2>结果</h2>
+        <div id="lt-cards" class="cards"></div>
+
+        <p id="lt-times" class="lt-times"></p>
+
+        <h3>延迟分布 (ms)</h3>
+        <table id="lt-latency-table" class="kv-table"></table>
+
+        <h3>错误类型 Top 5</h3>
+        <table id="lt-errors-table" class="kv-table"><tbody><tr><td>无</td></tr></tbody></table>
+
+        <h3>配置回显</h3>
+        <pre id="lt-config"></pre>
+      </section>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

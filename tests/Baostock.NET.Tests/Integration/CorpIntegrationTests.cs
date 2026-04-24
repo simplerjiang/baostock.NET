@@ -1,4 +1,4 @@
-using Baostock.NET.Client;
+﻿using Baostock.NET.Client;
 using Baostock.NET.Tests.Queries;
 
 namespace Baostock.NET.Tests.Integration;
@@ -15,27 +15,27 @@ public class CorpIntegrationTests
     public async Task QueryPerformanceExpressReport_ReturnsRows()
     {
         var rows = await _fixture.Client.QueryPerformanceExpressReportAsync(
-            code: "sh.600000",
+            code: "SH600000",
             startDate: "2023-01-01",
             endDate: "2023-12-31")
             .ToListAsync();
 
         Assert.True(rows.Count >= 0);
         if (rows.Count > 0)
-            Assert.Contains("sh.600000", rows[0].Code);
+            Assert.Contains("SH600000", rows[0].Code);
     }
 
     [Fact]
     public async Task QueryForecastReport_ReturnsRows()
     {
         var rows = await _fixture.Client.QueryForecastReportAsync(
-            code: "sh.600000",
+            code: "SH600000",
             startDate: "2023-01-01",
             endDate: "2023-12-31")
             .ToListAsync();
 
         Assert.True(rows.Count >= 0);
         if (rows.Count > 0)
-            Assert.Contains("sh.600000", rows[0].Code);
+            Assert.Contains("SH600000", rows[0].Code);
     }
 }

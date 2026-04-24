@@ -1,4 +1,4 @@
-using Baostock.NET.Client;
+﻿using Baostock.NET.Client;
 using Baostock.NET.Models;
 using Baostock.NET.Protocol;
 using Baostock.NET.Tests.Client;
@@ -15,7 +15,7 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_dividend_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        _ = await client.QueryDividendDataAsync(code: "sh.600000", year: "2023").ToListAsync();
+        _ = await client.QueryDividendDataAsync(code: "SH600000", year: "2023").ToListAsync();
 
         Assert.Equal(2, transport.SentFrames.Count);
         var header = MessageHeader.Parse(transport.SentFrames[1].AsSpan(0, Framing.MessageHeaderLength));
@@ -28,11 +28,11 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_dividend_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        var rows = await client.QueryDividendDataAsync(code: "sh.600000", year: "2023").ToListAsync();
+        var rows = await client.QueryDividendDataAsync(code: "SH600000", year: "2023").ToListAsync();
 
         Assert.True(rows.Count > 0);
         var first = rows[0];
-        Assert.Contains("sh.600000", first.Code);
+        Assert.Contains("SH600000", first.Code);
     }
 
     // ── QueryAdjustFactorAsync ───────────────────────
@@ -43,7 +43,7 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_adjust_factor");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        _ = await client.QueryAdjustFactorAsync(code: "sh.600000").ToListAsync();
+        _ = await client.QueryAdjustFactorAsync(code: "SH600000").ToListAsync();
 
         Assert.Equal(2, transport.SentFrames.Count);
         var header = MessageHeader.Parse(transport.SentFrames[1].AsSpan(0, Framing.MessageHeaderLength));
@@ -56,11 +56,11 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_adjust_factor");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        var rows = await client.QueryAdjustFactorAsync(code: "sh.600000").ToListAsync();
+        var rows = await client.QueryAdjustFactorAsync(code: "SH600000").ToListAsync();
 
         Assert.True(rows.Count > 0);
         var first = rows[0];
-        Assert.Contains("sh.600000", first.Code);
+        Assert.Contains("SH600000", first.Code);
         Assert.NotNull(first.AdjustFactor);
     }
 
@@ -72,11 +72,16 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_profit_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        _ = await client.QueryProfitDataAsync(code: "sh.600000", year: 2023, quarter: 2).ToListAsync();
+        _ = await client.QueryProfitDataAsync(code: "SH600000", year: 2023, quarter: 2).ToListAsync();
 
         Assert.Equal(2, transport.SentFrames.Count);
         var header = MessageHeader.Parse(transport.SentFrames[1].AsSpan(0, Framing.MessageHeaderLength));
         Assert.Equal("17", header.MessageType);
+
+        // 协议体断言：季频财务接口入参 SH600000 应翻译为 sh.600000
+        var bodyText = System.Text.Encoding.UTF8.GetString(transport.SentFrames[1]);
+        Assert.Contains("sh.600000", bodyText);
+        Assert.DoesNotContain("SH600000", bodyText);
     }
 
     [Fact]
@@ -85,11 +90,11 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_profit_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        var rows = await client.QueryProfitDataAsync(code: "sh.600000", year: 2023, quarter: 2).ToListAsync();
+        var rows = await client.QueryProfitDataAsync(code: "SH600000", year: 2023, quarter: 2).ToListAsync();
 
         Assert.True(rows.Count > 0);
         var first = rows[0];
-        Assert.Contains("sh.600000", first.Code);
+        Assert.Contains("SH600000", first.Code);
     }
 
     // ── QueryOperationDataAsync ──────────────────────
@@ -100,7 +105,7 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_operation_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        _ = await client.QueryOperationDataAsync(code: "sh.600000", year: 2023, quarter: 2).ToListAsync();
+        _ = await client.QueryOperationDataAsync(code: "SH600000", year: 2023, quarter: 2).ToListAsync();
 
         Assert.Equal(2, transport.SentFrames.Count);
         var header = MessageHeader.Parse(transport.SentFrames[1].AsSpan(0, Framing.MessageHeaderLength));
@@ -113,11 +118,11 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_operation_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        var rows = await client.QueryOperationDataAsync(code: "sh.600000", year: 2023, quarter: 2).ToListAsync();
+        var rows = await client.QueryOperationDataAsync(code: "SH600000", year: 2023, quarter: 2).ToListAsync();
 
         Assert.True(rows.Count > 0);
         var first = rows[0];
-        Assert.Contains("sh.600000", first.Code);
+        Assert.Contains("SH600000", first.Code);
     }
 
     // ── QueryGrowthDataAsync ─────────────────────────
@@ -128,7 +133,7 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_growth_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        _ = await client.QueryGrowthDataAsync(code: "sh.600000", year: 2023, quarter: 2).ToListAsync();
+        _ = await client.QueryGrowthDataAsync(code: "SH600000", year: 2023, quarter: 2).ToListAsync();
 
         Assert.Equal(2, transport.SentFrames.Count);
         var header = MessageHeader.Parse(transport.SentFrames[1].AsSpan(0, Framing.MessageHeaderLength));
@@ -141,11 +146,11 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_growth_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        var rows = await client.QueryGrowthDataAsync(code: "sh.600000", year: 2023, quarter: 2).ToListAsync();
+        var rows = await client.QueryGrowthDataAsync(code: "SH600000", year: 2023, quarter: 2).ToListAsync();
 
         Assert.True(rows.Count > 0);
         var first = rows[0];
-        Assert.Contains("sh.600000", first.Code);
+        Assert.Contains("SH600000", first.Code);
     }
 
     // ── QueryDupontDataAsync ─────────────────────────
@@ -156,7 +161,7 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_dupont_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        _ = await client.QueryDupontDataAsync(code: "sh.600000", year: 2023, quarter: 2).ToListAsync();
+        _ = await client.QueryDupontDataAsync(code: "SH600000", year: 2023, quarter: 2).ToListAsync();
 
         Assert.Equal(2, transport.SentFrames.Count);
         var header = MessageHeader.Parse(transport.SentFrames[1].AsSpan(0, Framing.MessageHeaderLength));
@@ -169,11 +174,11 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_dupont_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        var rows = await client.QueryDupontDataAsync(code: "sh.600000", year: 2023, quarter: 2).ToListAsync();
+        var rows = await client.QueryDupontDataAsync(code: "SH600000", year: 2023, quarter: 2).ToListAsync();
 
         Assert.True(rows.Count > 0);
         var first = rows[0];
-        Assert.Contains("sh.600000", first.Code);
+        Assert.Contains("SH600000", first.Code);
     }
 
     // ── QueryBalanceDataAsync ────────────────────────
@@ -184,7 +189,7 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_balance_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        _ = await client.QueryBalanceDataAsync(code: "sh.600000", year: 2023, quarter: 2).ToListAsync();
+        _ = await client.QueryBalanceDataAsync(code: "SH600000", year: 2023, quarter: 2).ToListAsync();
 
         Assert.Equal(2, transport.SentFrames.Count);
         var header = MessageHeader.Parse(transport.SentFrames[1].AsSpan(0, Framing.MessageHeaderLength));
@@ -197,11 +202,11 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_balance_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        var rows = await client.QueryBalanceDataAsync(code: "sh.600000", year: 2023, quarter: 2).ToListAsync();
+        var rows = await client.QueryBalanceDataAsync(code: "SH600000", year: 2023, quarter: 2).ToListAsync();
 
         Assert.True(rows.Count > 0);
         var first = rows[0];
-        Assert.Contains("sh.600000", first.Code);
+        Assert.Contains("SH600000", first.Code);
     }
 
     // ── QueryCashFlowDataAsync ───────────────────────
@@ -212,7 +217,7 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_cash_flow_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        _ = await client.QueryCashFlowDataAsync(code: "sh.600000", year: 2023, quarter: 2).ToListAsync();
+        _ = await client.QueryCashFlowDataAsync(code: "SH600000", year: 2023, quarter: 2).ToListAsync();
 
         Assert.Equal(2, transport.SentFrames.Count);
         var header = MessageHeader.Parse(transport.SentFrames[1].AsSpan(0, Framing.MessageHeaderLength));
@@ -225,11 +230,11 @@ public class EvaluationQueryTests
         var transport = CreateTransportWithFixture("query_cash_flow_data");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        var rows = await client.QueryCashFlowDataAsync(code: "sh.600000", year: 2023, quarter: 2).ToListAsync();
+        var rows = await client.QueryCashFlowDataAsync(code: "SH600000", year: 2023, quarter: 2).ToListAsync();
 
         Assert.True(rows.Count > 0);
         var first = rows[0];
-        Assert.Contains("sh.600000", first.Code);
+        Assert.Contains("SH600000", first.Code);
     }
 
     // ── Helper ───────────────────────────────────────

@@ -1,4 +1,4 @@
-using Baostock.NET.Client;
+﻿using Baostock.NET.Client;
 using Baostock.NET.Models;
 using Baostock.NET.Tests.Queries;
 
@@ -18,13 +18,13 @@ public class FullVerificationTest
         var results = new List<(string api, int rows, string? sample)>();
 
         // 1. K线
-        var klines = await client.QueryHistoryKDataPlusAsync("sh.600000",
+        var klines = await client.QueryHistoryKDataPlusAsync("SH600000",
             startDate: "2024-01-02", endDate: "2024-01-10").ToListAsync();
         results.Add(("QueryHistoryKDataPlusAsync", klines.Count,
             klines.FirstOrDefault()?.ToString()));
 
         // 2. 行业分类
-        var industry = await client.QueryStockIndustryAsync("sh.600000", "2024-01-02").ToListAsync();
+        var industry = await client.QueryStockIndustryAsync("SH600000", "2024-01-02").ToListAsync();
         results.Add(("QueryStockIndustryAsync", industry.Count, industry.FirstOrDefault()?.ToString()));
 
         // 3. 沪深300
@@ -40,43 +40,43 @@ public class FullVerificationTest
         results.Add(("QueryZz500StocksAsync", zz500.Count, zz500.FirstOrDefault()?.ToString()));
 
         // 6. 股息分红
-        var dividend = await client.QueryDividendDataAsync("sh.600000", "2023", "report").ToListAsync();
+        var dividend = await client.QueryDividendDataAsync("SH600000", "2023", "report").ToListAsync();
         results.Add(("QueryDividendDataAsync", dividend.Count, dividend.FirstOrDefault()?.ToString()));
 
         // 7. 复权因子
-        var adjust = await client.QueryAdjustFactorAsync("sh.600000", "2024-01-01", "2024-01-31").ToListAsync();
+        var adjust = await client.QueryAdjustFactorAsync("SH600000", "2024-01-01", "2024-01-31").ToListAsync();
         results.Add(("QueryAdjustFactorAsync", adjust.Count, adjust.FirstOrDefault()?.ToString()));
 
         // 8. 季频盈利
-        var profit = await client.QueryProfitDataAsync("sh.600000", 2023, 2).ToListAsync();
+        var profit = await client.QueryProfitDataAsync("SH600000", 2023, 2).ToListAsync();
         results.Add(("QueryProfitDataAsync", profit.Count, profit.FirstOrDefault()?.ToString()));
 
         // 9. 季频营运
-        var operation = await client.QueryOperationDataAsync("sh.600000", 2023, 2).ToListAsync();
+        var operation = await client.QueryOperationDataAsync("SH600000", 2023, 2).ToListAsync();
         results.Add(("QueryOperationDataAsync", operation.Count, operation.FirstOrDefault()?.ToString()));
 
         // 10. 季频成长
-        var growth = await client.QueryGrowthDataAsync("sh.600000", 2023, 2).ToListAsync();
+        var growth = await client.QueryGrowthDataAsync("SH600000", 2023, 2).ToListAsync();
         results.Add(("QueryGrowthDataAsync", growth.Count, growth.FirstOrDefault()?.ToString()));
 
         // 11. 杜邦指数
-        var dupont = await client.QueryDupontDataAsync("sh.600000", 2023, 2).ToListAsync();
+        var dupont = await client.QueryDupontDataAsync("SH600000", 2023, 2).ToListAsync();
         results.Add(("QueryDupontDataAsync", dupont.Count, dupont.FirstOrDefault()?.ToString()));
 
         // 12. 偿债能力
-        var balance = await client.QueryBalanceDataAsync("sh.600000", 2023, 2).ToListAsync();
+        var balance = await client.QueryBalanceDataAsync("SH600000", 2023, 2).ToListAsync();
         results.Add(("QueryBalanceDataAsync", balance.Count, balance.FirstOrDefault()?.ToString()));
 
         // 13. 现金流
-        var cashflow = await client.QueryCashFlowDataAsync("sh.600000", 2023, 2).ToListAsync();
+        var cashflow = await client.QueryCashFlowDataAsync("SH600000", 2023, 2).ToListAsync();
         results.Add(("QueryCashFlowDataAsync", cashflow.Count, cashflow.FirstOrDefault()?.ToString()));
 
         // 14. 业绩快报
-        var perf = await client.QueryPerformanceExpressReportAsync("sh.600000", "2023-01-01", "2023-12-31").ToListAsync();
+        var perf = await client.QueryPerformanceExpressReportAsync("SH600000", "2023-01-01", "2023-12-31").ToListAsync();
         results.Add(("QueryPerformanceExpressReportAsync", perf.Count, perf.FirstOrDefault()?.ToString()));
 
         // 15. 业绩预告
-        var forecast = await client.QueryForecastReportAsync("sh.600000", "2023-01-01", "2023-12-31").ToListAsync();
+        var forecast = await client.QueryForecastReportAsync("SH600000", "2023-01-01", "2023-12-31").ToListAsync();
         results.Add(("QueryForecastReportAsync", forecast.Count, forecast.FirstOrDefault()?.ToString()));
 
         // 16. 交易日
@@ -88,7 +88,7 @@ public class FullVerificationTest
         results.Add(("QueryAllStockAsync", allStock.Count, allStock.FirstOrDefault()?.ToString()));
 
         // 18. 证券基本资料
-        var stockBasic = await client.QueryStockBasicAsync("sh.600000").ToListAsync();
+        var stockBasic = await client.QueryStockBasicAsync("SH600000").ToListAsync();
         results.Add(("QueryStockBasicAsync", stockBasic.Count, stockBasic.FirstOrDefault()?.ToString()));
 
         // 19. 存款利率

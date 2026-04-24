@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using Baostock.NET.Models;
 using Baostock.NET.Protocol;
+using Baostock.NET.Util;
 
 namespace Baostock.NET.Client;
 
@@ -10,7 +11,7 @@ public partial class BaostockClient
     /// <summary>
     /// 查询行业分类。MSG 59/60。code 和 date 均可为空。
     /// </summary>
-    /// <param name="code">证券代码，为 <c>null</c> 时查询全部。</param>
+    /// <param name="code">证券代码，为 <c>null</c>/空时查询全部；非空时接受东财风格 <c>"SH600000"</c>，亦兼容 <c>"sh.600000"</c> 等格式。</param>
     /// <param name="date">查询日期，格式 <c>"yyyy-MM-dd"</c>。</param>
     /// <param name="ct">取消令牌。</param>
     /// <returns>流式返回每行行业分类数据。</returns>
@@ -20,6 +21,9 @@ public partial class BaostockClient
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         await EnsureLoggedInAsync(ct).ConfigureAwait(false);
+
+        // v1.2.0 BREAKING：传入 code 需为东财风格（SH600000）或其它兼容格式，内部翻译为 baostock 协议格式。
+        var codeForBody = string.IsNullOrWhiteSpace(code) ? string.Empty : CodeFormatter.ToBaostock(code);
 
         var curPage = 1;
         while (true)
@@ -31,7 +35,7 @@ public partial class BaostockClient
                 Session.UserId ?? "anonymous",
                 curPage.ToString(CultureInfo.InvariantCulture),
                 Framing.DefaultPerPageCount.ToString(CultureInfo.InvariantCulture),
-                code ?? string.Empty,
+                codeForBody,
                 date ?? string.Empty);
 
             var frame = FrameCodec.EncodeFrame(MessageTypes.QueryStockIndustryRequest, body);
@@ -51,7 +55,7 @@ public partial class BaostockClient
             {
                 yield return new StockIndustryRow(
                     UpdateDate: row[0],
-                    Code: row[1],
+                    Code: FormatModelCode(row[1]),
                     CodeName: row[2],
                     Industry: row[3],
                     IndustryClassification: row[4]);
@@ -158,7 +162,7 @@ public partial class BaostockClient
             {
                 yield return new IndexConstituentRow(
                     UpdateDate: row[0],
-                    Code: row[1],
+                    Code: FormatModelCode(row[1]),
                     CodeName: row[2]);
             }
 

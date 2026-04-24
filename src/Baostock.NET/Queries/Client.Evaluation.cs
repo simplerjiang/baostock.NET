@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using Baostock.NET.Models;
 using Baostock.NET.Protocol;
+using Baostock.NET.Util;
 
 namespace Baostock.NET.Client;
 
@@ -10,7 +11,7 @@ public partial class BaostockClient
     /// <summary>
     /// 查询股息分红。MSG 13/14。
     /// </summary>
-    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="code">证券代码，东方财富风格 <c>"SH600000"</c> / <c>"SZ000001"</c> / <c>"BJ430047"</c>；亦兼容 <c>"sh.600000"</c> / <c>"sh600000"</c> / <c>"600000.SH"</c> 等格式。</param>
     /// <param name="year">年份，如 <c>"2024"</c>；为 <c>null</c> 时默认当年。</param>
     /// <param name="yearType">年份类型，<c>"report"</c> 表示报告期，<c>"operate"</c> 表示实施日期。</param>
     /// <param name="ct">取消令牌。</param>
@@ -24,7 +25,8 @@ public partial class BaostockClient
         await EnsureLoggedInAsync(ct).ConfigureAwait(false);
 
         ArgumentException.ThrowIfNullOrEmpty(code);
-        code = code.ToLowerInvariant();
+        // v1.2.0 BREAKING：对外接受东财风格（SH600000），内部翻译为 baostock 协议格式（sh.600000）。
+        code = CodeFormatter.ToBaostock(code);
         year ??= DateTime.Now.ToString("yyyy", CultureInfo.InvariantCulture);
 
         var curPage = 1;
@@ -55,7 +57,7 @@ public partial class BaostockClient
             foreach (var row in page.Rows)
             {
                 yield return new DividendRow(
-                    Code: row[0],
+                    Code: FormatModelCode(row[0]),
                     DividPreNoticeDate: NullIfEmpty(row[1]),
                     DividAgmPumDate: NullIfEmpty(row[2]),
                     DividPlanAnnounceDate: NullIfEmpty(row[3]),
@@ -79,7 +81,7 @@ public partial class BaostockClient
     /// <summary>
     /// 查询复权因子。MSG 15/16。
     /// </summary>
-    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="code">证券代码，东方财富风格 <c>"SH600000"</c> / <c>"SZ000001"</c> / <c>"BJ430047"</c>；亦兼容 <c>"sh.600000"</c> / <c>"sh600000"</c> / <c>"600000.SH"</c> 等格式。</param>
     /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
     /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
     /// <param name="ct">取消令牌。</param>
@@ -93,7 +95,8 @@ public partial class BaostockClient
         await EnsureLoggedInAsync(ct).ConfigureAwait(false);
 
         ArgumentException.ThrowIfNullOrEmpty(code);
-        code = code.ToLowerInvariant();
+        // v1.2.0 BREAKING：对外接受东财风格（SH600000），内部翻译为 baostock 协议格式（sh.600000）。
+        code = CodeFormatter.ToBaostock(code);
         startDate ??= "2015-01-01";
         endDate ??= DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
@@ -125,7 +128,7 @@ public partial class BaostockClient
             foreach (var row in page.Rows)
             {
                 yield return new AdjustFactorRow(
-                    Code: row[0],
+                    Code: FormatModelCode(row[0]),
                     DividOperateDate: NullIfEmpty(row[1]),
                     ForeAdjustFactor: ParseNullableDecimal(row[2]),
                     BackAdjustFactor: ParseNullableDecimal(row[3]),
@@ -138,7 +141,7 @@ public partial class BaostockClient
     }
 
     /// <summary>查询季频盈利能力。MSG 17/18。</summary>
-    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="code">证券代码，东方财富风格 <c>"SH600000"</c>；亦兼容 <c>"sh.600000"</c> 等格式。</param>
     /// <param name="year">年份，如 2024。</param>
     /// <param name="quarter">季度（1–4）。</param>
     /// <param name="ct">取消令牌。</param>
@@ -149,7 +152,7 @@ public partial class BaostockClient
             code, year, quarter, ParseProfitRow, ct);
 
     /// <summary>查询季频营运能力。MSG 19/20。</summary>
-    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="code">证券代码，东方财富风格 <c>"SH600000"</c>；亦兼容 <c>"sh.600000"</c> 等格式。</param>
     /// <param name="year">年份，如 2024。</param>
     /// <param name="quarter">季度（1–4）。</param>
     /// <param name="ct">取消令牌。</param>
@@ -160,7 +163,7 @@ public partial class BaostockClient
             code, year, quarter, ParseOperationRow, ct);
 
     /// <summary>查询季频成长能力。MSG 21/22。</summary>
-    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="code">证券代码，东方财富风格 <c>"SH600000"</c>；亦兼容 <c>"sh.600000"</c> 等格式。</param>
     /// <param name="year">年份，如 2024。</param>
     /// <param name="quarter">季度（1–4）。</param>
     /// <param name="ct">取消令牌。</param>
@@ -171,7 +174,7 @@ public partial class BaostockClient
             code, year, quarter, ParseGrowthRow, ct);
 
     /// <summary>查询季频杜邦指数。MSG 23/24。</summary>
-    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="code">证券代码，东方财富风格 <c>"SH600000"</c>；亦兼容 <c>"sh.600000"</c> 等格式。</param>
     /// <param name="year">年份，如 2024。</param>
     /// <param name="quarter">季度（1–4）。</param>
     /// <param name="ct">取消令牌。</param>
@@ -182,7 +185,7 @@ public partial class BaostockClient
             code, year, quarter, ParseDupontRow, ct);
 
     /// <summary>查询季频偿债能力。MSG 25/26。</summary>
-    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="code">证券代码，东方财富风格 <c>"SH600000"</c>；亦兼容 <c>"sh.600000"</c> 等格式。</param>
     /// <param name="year">年份，如 2024。</param>
     /// <param name="quarter">季度（1–4）。</param>
     /// <param name="ct">取消令牌。</param>
@@ -193,7 +196,7 @@ public partial class BaostockClient
             code, year, quarter, ParseBalanceRow, ct);
 
     /// <summary>查询季频现金流量。MSG 27/28。</summary>
-    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="code">证券代码，东方财富风格 <c>"SH600000"</c>；亦兼容 <c>"sh.600000"</c> 等格式。</param>
     /// <param name="year">年份，如 2024。</param>
     /// <param name="quarter">季度（1–4）。</param>
     /// <param name="ct">取消令牌。</param>
@@ -217,7 +220,9 @@ public partial class BaostockClient
         await EnsureLoggedInAsync(ct).ConfigureAwait(false);
 
         ArgumentException.ThrowIfNullOrEmpty(code);
-        code = code.ToLowerInvariant();
+        // v1.2.0 BREAKING：对外接受东财风格（SH600000），内部翻译为 baostock 协议格式（sh.600000）。
+        // 6 个季频财务方法（Profit/Operation/Growth/Dupont/Balance/CashFlow）共用此入口，集中翻译。
+        code = CodeFormatter.ToBaostock(code);
 
         var curPage = 1;
         while (true)
@@ -255,8 +260,15 @@ public partial class BaostockClient
     private static string? NullIfEmpty(string value)
         => string.IsNullOrEmpty(value) ? null : value;
 
+    /// <summary>
+    /// 将服务器返回的 baostock 原始 code（如 <c>sh.600000</c>）反向翻译为东方财富风格（<c>SH600000</c>），
+    /// 与 SDK 入参格式一致。无法识别的代码（极少数 ETF/指数特殊代码）保留原值，避免抛异常。
+    /// </summary>
+    private static string FormatModelCode(string raw)
+        => CodeFormatter.TryParse(raw, out var sc) ? sc.EastMoneyForm : raw;
+
     private static ProfitRow ParseProfitRow(string[] cols) => new(
-        Code: cols[0],
+        Code: FormatModelCode(cols[0]),
         PubDate: NullIfEmpty(cols[1]),
         StatDate: NullIfEmpty(cols[2]),
         RoeAvg: ParseNullableDecimal(cols[3]),
@@ -269,7 +281,7 @@ public partial class BaostockClient
         LiqaShare: ParseNullableDecimal(cols[10]));
 
     private static OperationRow ParseOperationRow(string[] cols) => new(
-        Code: cols[0],
+        Code: FormatModelCode(cols[0]),
         PubDate: NullIfEmpty(cols[1]),
         StatDate: NullIfEmpty(cols[2]),
         NrTurnRatio: ParseNullableDecimal(cols[3]),
@@ -280,7 +292,7 @@ public partial class BaostockClient
         AssetTurnRatio: ParseNullableDecimal(cols[8]));
 
     private static GrowthRow ParseGrowthRow(string[] cols) => new(
-        Code: cols[0],
+        Code: FormatModelCode(cols[0]),
         PubDate: NullIfEmpty(cols[1]),
         StatDate: NullIfEmpty(cols[2]),
         YoyEquity: ParseNullableDecimal(cols[3]),
@@ -290,7 +302,7 @@ public partial class BaostockClient
         YoyPni: ParseNullableDecimal(cols[7]));
 
     private static DupontRow ParseDupontRow(string[] cols) => new(
-        Code: cols[0],
+        Code: FormatModelCode(cols[0]),
         PubDate: NullIfEmpty(cols[1]),
         StatDate: NullIfEmpty(cols[2]),
         DupontRoe: ParseNullableDecimal(cols[3]),
@@ -303,7 +315,7 @@ public partial class BaostockClient
         DupontEbittogr: ParseNullableDecimal(cols[10]));
 
     private static BalanceRow ParseBalanceRow(string[] cols) => new(
-        Code: cols[0],
+        Code: FormatModelCode(cols[0]),
         PubDate: NullIfEmpty(cols[1]),
         StatDate: NullIfEmpty(cols[2]),
         CurrentRatio: ParseNullableDecimal(cols[3]),
@@ -314,7 +326,7 @@ public partial class BaostockClient
         AssetToEquity: ParseNullableDecimal(cols[8]));
 
     private static CashFlowRow ParseCashFlowRow(string[] cols) => new(
-        Code: cols[0],
+        Code: FormatModelCode(cols[0]),
         PubDate: NullIfEmpty(cols[1]),
         StatDate: NullIfEmpty(cols[2]),
         CaToAsset: ParseNullableDecimal(cols[3]),

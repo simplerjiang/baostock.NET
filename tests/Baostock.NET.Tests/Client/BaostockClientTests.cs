@@ -23,6 +23,12 @@ internal sealed class FakeTransport : ITransport
         return ValueTask.CompletedTask;
     }
 
+    /// <summary>
+    /// 测试辅助：模拟 socket 半死/IOException 风暴。调用后 <see cref="IsConnected"/> 立即变 false，
+    /// 直到再次 <see cref="ConnectAsync"/>。供 B1（v1.2.0-preview5）TCP 自愈测试用。
+    /// </summary>
+    public void MarkBroken() => IsConnected = false;
+
     public ValueTask SendAsync(ReadOnlyMemory<byte> frame, CancellationToken ct = default)
     {
         SentFrames.Add(frame.ToArray());

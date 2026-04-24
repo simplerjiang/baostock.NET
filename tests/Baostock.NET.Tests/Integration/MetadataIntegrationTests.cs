@@ -1,4 +1,4 @@
-using Baostock.NET.Client;
+﻿using Baostock.NET.Client;
 using Baostock.NET.Tests.Queries;
 
 namespace Baostock.NET.Tests.Integration;
@@ -39,11 +39,11 @@ public class MetadataIntegrationTests
     public async Task QueryStockBasic_ReturnsRows()
     {
         var rows = await _fixture.Client.QueryStockBasicAsync(
-            code: "sh.600000")
+            code: "SH600000")
             .ToListAsync();
 
         Assert.True(rows.Count > 0);
-        Assert.Contains("sh.600000", rows[0].Code);
+        Assert.Contains("SH600000", rows[0].Code);
         Assert.False(string.IsNullOrEmpty(rows[0].CodeName));
     }
 }

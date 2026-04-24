@@ -18,15 +18,15 @@ using Baostock.NET;
 
 await using var client = await BaostockClient.CreateAndLoginAsync();
 
-// K 线数据
-await foreach (var row in client.QueryHistoryKDataPlusAsync("sh.600000",
+// K 线数据（v1.2.0 BREAKING：证券代码默认东方财富风格 SH600000 / SZ000001 / BJ430047，亦兼容 sh.600000、sh600000、600000.SH等格式）
+await foreach (var row in client.QueryHistoryKDataPlusAsync("SH600000",
     startDate: "2024-01-01", endDate: "2024-01-31"))
 {
     Console.WriteLine($"{row.Date} {row.Close}");
 }
 
 // 财务指标
-await foreach (var row in client.QueryProfitDataAsync("sh.600000", 2023, 2))
+await foreach (var row in client.QueryProfitDataAsync("SH600000", 2023, 2))
 {
     Console.WriteLine($"{row.RoeAvg}");
 }
@@ -108,6 +108,32 @@ await foreach (var row in client.QueryProfitDataAsync("sh.600000", 2023, 2))
 | — | `client.QuerySuspendedStocksAsync()` | 暂停上市股票 |
 | — | `client.QueryStStocksAsync()` | ST 股票 |
 | — | `client.QueryStarStStocksAsync()` | *ST 股票 |
+| — | `client.GetRealtimeQuoteAsync(code)` | **实时行情（三源对冲：Sina → Tencent → EastMoney）** |
+| — | `client.GetRealtimeQuotesAsync(codes)` | **批量实时行情** |
+| — | `client.GetHistoryKLineAsync(code, freq, start, end)` | **历史 K 线（双源对冲：EastMoney → Tencent）** |
+
+```csharp
+// 实时行情：三源对冲（v1.2.0 Sprint 2）
+await using var client = await BaostockClient.CreateAndLoginAsync();
+var quote = await client.GetRealtimeQuoteAsync("SH600519");
+Console.WriteLine($"{quote.Code} {quote.Name} 现价={quote.Last} 昨收={quote.PreClose} 来源={quote.Source}");
+
+// 批量
+var quotes = await client.GetRealtimeQuotesAsync(new[] { "SH600519", "SZ000001", "BJ430047" });
+
+// 历史 K 线：双源对冲（v1.2.0 Sprint 2 Phase 2）
+// 默认 PreAdjust 前复权；500ms hedge 间隔；EM 不响应或失败时自动切到 Tencent
+var rows = await client.GetHistoryKLineAsync(
+    "SH600519",
+    KLineFrequency.Day,
+    DateTime.Today.AddDays(-30),
+    DateTime.Today);
+foreach (var r in rows.Take(3))
+    Console.WriteLine($"{r.Date:yyyy-MM-dd} O={r.Open} C={r.Close} H={r.High} L={r.Low} 来源={r.Source}");
+
+// 注意：北交所（BJ*）历史 K 线在当前 EM/Tencent 公网端点均不可用，会抛 AllSourcesFailedException；
+// Sprint 3 计划接入替代源补齐。详见 CHANGELOG v1.2.0-preview2 Notes。
+```
 
 ## 特性
 

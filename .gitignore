@@ -51,3 +51,12 @@ tools/capture-fixtures/__pycache__/
 _site/
 /api/
 
+
+# TestUI local curl/fetch scratch outputs (captured from localhost:5050, NOT source)
+/_index.html
+/_meta.json
+/_targets.json
+
+# Source probe raw responses (capture snapshots, large/noisy)
+tools/source-probes/raw/
+tools/source-probes/__pycache__/

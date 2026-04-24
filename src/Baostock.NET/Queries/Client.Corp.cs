@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using Baostock.NET.Models;
 using Baostock.NET.Protocol;
+using Baostock.NET.Util;
 
 namespace Baostock.NET.Client;
 
@@ -10,7 +11,7 @@ public partial class BaostockClient
     /// <summary>
     /// 查询公司业绩快报。MSG 29/30。
     /// </summary>
-    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="code">证券代码，东方财富风格 <c>"SH600000"</c> / <c>"SZ000001"</c> / <c>"BJ430047"</c>；亦兼容 <c>"sh.600000"</c> / <c>"sh600000"</c> / <c>"600000.SH"</c> 等格式。</param>
     /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
     /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
     /// <param name="ct">取消令牌。</param>
@@ -24,7 +25,8 @@ public partial class BaostockClient
         await EnsureLoggedInAsync(ct).ConfigureAwait(false);
 
         ArgumentException.ThrowIfNullOrEmpty(code);
-        code = code.ToLowerInvariant();
+        // v1.2.0 BREAKING：对外接受东财风格（SH600000），内部翻译为 baostock 协议格式（sh.600000）。
+        code = CodeFormatter.ToBaostock(code);
         startDate ??= "2015-01-01";
         endDate ??= DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
@@ -56,7 +58,7 @@ public partial class BaostockClient
             foreach (var row in page.Rows)
             {
                 yield return new PerformanceExpressRow(
-                    Code: row[0],
+                    Code: FormatModelCode(row[0]),
                     PerformanceExpPubDate: NullIfEmpty(row[1]),
                     PerformanceExpStatDate: NullIfEmpty(row[2]),
                     PerformanceExpUpdateDate: NullIfEmpty(row[3]),
@@ -77,7 +79,7 @@ public partial class BaostockClient
     /// <summary>
     /// 查询公司业绩预告。MSG 31/32。
     /// </summary>
-    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="code">证券代码，东方财富风格 <c>"SH600000"</c> / <c>"SZ000001"</c> / <c>"BJ430047"</c>；亦兼容 <c>"sh.600000"</c> / <c>"sh600000"</c> / <c>"600000.SH"</c> 等格式。</param>
     /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
     /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
     /// <param name="ct">取消令牌。</param>
@@ -91,7 +93,8 @@ public partial class BaostockClient
         await EnsureLoggedInAsync(ct).ConfigureAwait(false);
 
         ArgumentException.ThrowIfNullOrEmpty(code);
-        code = code.ToLowerInvariant();
+        // v1.2.0 BREAKING：对外接受东财风格（SH600000），内部翻译为 baostock 协议格式（sh.600000）。
+        code = CodeFormatter.ToBaostock(code);
         startDate ??= "2015-01-01";
         endDate ??= DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
@@ -123,7 +126,7 @@ public partial class BaostockClient
             foreach (var row in page.Rows)
             {
                 yield return new ForecastReportRow(
-                    Code: row[0],
+                    Code: FormatModelCode(row[0]),
                     ProfitForcastExpPubDate: NullIfEmpty(row[1]),
                     ProfitForcastExpStatDate: NullIfEmpty(row[2]),
                     ProfitForcastType: NullIfEmpty(row[3]),

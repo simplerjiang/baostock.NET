@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Baostock.NET", "src\Baostoc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Baostock.NET.Tests", "tests\Baostock.NET.Tests\Baostock.NET.Tests.csproj", "{DD9DB58C-009D-4184-A142-55BF2FC65AEA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Baostock.NET.TestUI", "src\Baostock.NET.TestUI\Baostock.NET.TestUI.csproj", "{31D01D8F-E551-450A-893E-74850E0E3488}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,18 @@ Global
 		{DD9DB58C-009D-4184-A142-55BF2FC65AEA}.Release|x64.Build.0 = Release|Any CPU
 		{DD9DB58C-009D-4184-A142-55BF2FC65AEA}.Release|x86.ActiveCfg = Release|Any CPU
 		{DD9DB58C-009D-4184-A142-55BF2FC65AEA}.Release|x86.Build.0 = Release|Any CPU
+		{31D01D8F-E551-450A-893E-74850E0E3488}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31D01D8F-E551-450A-893E-74850E0E3488}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31D01D8F-E551-450A-893E-74850E0E3488}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{31D01D8F-E551-450A-893E-74850E0E3488}.Debug|x64.Build.0 = Debug|Any CPU
+		{31D01D8F-E551-450A-893E-74850E0E3488}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{31D01D8F-E551-450A-893E-74850E0E3488}.Debug|x86.Build.0 = Debug|Any CPU
+		{31D01D8F-E551-450A-893E-74850E0E3488}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31D01D8F-E551-450A-893E-74850E0E3488}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31D01D8F-E551-450A-893E-74850E0E3488}.Release|x64.ActiveCfg = Release|Any CPU
+		{31D01D8F-E551-450A-893E-74850E0E3488}.Release|x64.Build.0 = Release|Any CPU
+		{31D01D8F-E551-450A-893E-74850E0E3488}.Release|x86.ActiveCfg = Release|Any CPU
+		{31D01D8F-E551-450A-893E-74850E0E3488}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -50,5 +64,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{F53B964A-2940-4301-910C-F72E455449AE} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{DD9DB58C-009D-4184-A142-55BF2FC65AEA} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{31D01D8F-E551-450A-893E-74850E0E3488} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

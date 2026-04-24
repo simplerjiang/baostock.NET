@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using Baostock.NET.Models;
 using Baostock.NET.Protocol;
+using Baostock.NET.Util;
 
 namespace Baostock.NET.Client;
 
@@ -120,7 +121,7 @@ public partial class BaostockClient
             {
                 yield return new SpecialStockRow(
                     UpdateDate: row[0],
-                    Code: row[1],
+                    Code: FormatModelCode(row[1]),
                     CodeName: row[2]);
             }
 

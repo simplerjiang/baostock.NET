@@ -1,4 +1,4 @@
-using Baostock.NET.Client;
+﻿using Baostock.NET.Client;
 using Baostock.NET.Models;
 using Baostock.NET.Tests.Queries;
 
@@ -16,7 +16,7 @@ public class HistoryIntegrationTests
     public async Task QueryHistoryKDataPlus_Daily_ReturnsRows()
     {
         var rows = await _fixture.Client.QueryHistoryKDataPlusAsync(
-            "sh.600000",
+            "SH600000",
             startDate: "2024-01-01",
             endDate: "2024-01-31",
             frequency: KLineFrequency.Day,
@@ -24,7 +24,7 @@ public class HistoryIntegrationTests
             .ToListAsync();
 
         Assert.InRange(rows.Count, 15, 23); // 约 18~21 个交易日
-        Assert.Equal("sh.600000", rows[0].Code);
+        Assert.Equal("SH600000", rows[0].Code);
         Assert.True(rows[0].Date >= new DateOnly(2024, 1, 2));
         Assert.NotNull(rows[0].Close);
     }

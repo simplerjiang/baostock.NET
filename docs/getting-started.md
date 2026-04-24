@@ -20,8 +20,8 @@ using Baostock.NET.Client;
 // 1. 创建客户端并登录（推荐使用 await using 自动登出）
 await using var client = await BaostockClient.CreateAndLoginAsync();
 
-// 2. 查询数据
-await foreach (var row in client.QueryHistoryKDataPlusAsync("sh.600000"))
+// 2. 查询数据（v1.2.0 BREAKING：证券代码默认东方财富风格 SH600000 / SZ000001 / BJ430047，亦兼容 sh.600000、sh600000、600000.SH等格式）
+await foreach (var row in client.QueryHistoryKDataPlusAsync("SH600000"))
 {
     // 3. 处理每一行数据
     Console.WriteLine($"{row.Date} 收盘价: {row.Close}");
@@ -123,7 +123,7 @@ await using var client2 = await BaostockClient.CreateAndLoginAsync("your_user_id
 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
 await using var client = await BaostockClient.CreateAndLoginAsync(ct: cts.Token);
-await foreach (var row in client.QueryHistoryKDataPlusAsync("sh.600000", ct: cts.Token))
+await foreach (var row in client.QueryHistoryKDataPlusAsync("SH600000", ct: cts.Token))
 {
     Console.WriteLine(row.Close);
 }

@@ -1,4 +1,4 @@
-using Baostock.NET.Client;
+﻿using Baostock.NET.Client;
 using Baostock.NET.Tests.Queries;
 
 namespace Baostock.NET.Tests.Integration;
@@ -15,7 +15,7 @@ public class SectorIntegrationTests
     public async Task QueryStockIndustry_ReturnsRows()
     {
         var rows = await _fixture.Client.QueryStockIndustryAsync(
-            code: "sh.600000")
+            code: "SH600000")
             .ToListAsync();
 
         Assert.True(rows.Count > 0);

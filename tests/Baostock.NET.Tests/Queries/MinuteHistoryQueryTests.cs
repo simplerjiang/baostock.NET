@@ -1,4 +1,4 @@
-using Baostock.NET.Client;
+﻿using Baostock.NET.Client;
 using Baostock.NET.Models;
 using Baostock.NET.Protocol;
 using Baostock.NET.Tests.Client;
@@ -14,7 +14,7 @@ public class MinuteHistoryQueryTests
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
         var rows = await client.QueryHistoryKDataPlusMinuteAsync(
-            "sh.600000",
+            "SH600000",
             startDate: "2024-01-02",
             endDate: "2024-01-02",
             frequency: KLineFrequency.FiveMinute).ToListAsync();
@@ -29,7 +29,7 @@ public class MinuteHistoryQueryTests
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
         var rows = await client.QueryHistoryKDataPlusMinuteAsync(
-            "sh.600000",
+            "SH600000",
             startDate: "2024-01-02",
             endDate: "2024-01-02",
             frequency: KLineFrequency.FiveMinute).ToListAsync();
@@ -37,7 +37,7 @@ public class MinuteHistoryQueryTests
         var first = rows[0];
         Assert.Equal(new DateOnly(2024, 1, 2), first.Date);
         Assert.Equal("20240102093500000", first.Time);
-        Assert.Equal("sh.600000", first.Code);
+        Assert.Equal("SH600000", first.Code);
         Assert.NotNull(first.Open);
     }
 
@@ -48,7 +48,7 @@ public class MinuteHistoryQueryTests
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
         _ = await client.QueryHistoryKDataPlusMinuteAsync(
-            "sh.600000",
+            "SH600000",
             startDate: "2024-01-02",
             endDate: "2024-01-02",
             frequency: KLineFrequency.FiveMinute).ToListAsync();
@@ -66,7 +66,7 @@ public class MinuteHistoryQueryTests
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
         var rows = await client.QueryHistoryKDataPlusMinuteAsync(
-            "sh.600000",
+            "SH600000",
             startDate: "2024-01-02",
             endDate: "2024-01-02",
             frequency: KLineFrequency.SixtyMinute).ToListAsync();
@@ -82,7 +82,7 @@ public class MinuteHistoryQueryTests
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () =>
             await client.QueryHistoryKDataPlusAsync(
-                "sh.600000",
+                "SH600000",
                 frequency: KLineFrequency.FiveMinute).ToListAsync());
     }
 
@@ -94,7 +94,7 @@ public class MinuteHistoryQueryTests
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () =>
             await client.QueryHistoryKDataPlusMinuteAsync(
-                "sh.600000",
+                "SH600000",
                 frequency: KLineFrequency.Day).ToListAsync());
     }
 

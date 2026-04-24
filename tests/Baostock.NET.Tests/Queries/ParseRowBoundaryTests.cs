@@ -15,7 +15,7 @@ public class ParseRowBoundaryTests
         var row = BaostockClient.ParseKLineRow(cols);
 
         Assert.Equal(new DateOnly(2024, 1, 2), row.Date);
-        Assert.Equal("sh.600000", row.Code);
+        Assert.Equal("SH600000", row.Code);
         Assert.Equal(10.50m, row.Open);
         Assert.Equal(10.80m, row.High);
         Assert.Equal(10.30m, row.Low);
@@ -56,7 +56,7 @@ public class ParseRowBoundaryTests
         var row = BaostockClient.ParseKLineRow(cols);
 
         Assert.Equal(new DateOnly(2024, 1, 2), row.Date);
-        Assert.Equal("sh.600000", row.Code);
+        Assert.Equal("SH600000", row.Code);
         Assert.Equal(10.60m, row.Close);
         Assert.Equal(AdjustFlag.PostAdjust, row.AdjustFlag);
         Assert.Null(row.Turn);
@@ -101,7 +101,7 @@ public class ParseRowBoundaryTests
 
         Assert.Equal(new DateOnly(2024, 1, 2), row.Date);
         Assert.Equal("14:30:00", row.Time);
-        Assert.Equal("sh.600000", row.Code);
+        Assert.Equal("SH600000", row.Code);
         Assert.Equal(10.50m, row.Open);
         Assert.Equal(10.80m, row.High);
         Assert.Equal(10.30m, row.Low);
@@ -140,5 +140,28 @@ public class ParseRowBoundaryTests
         Assert.Null(row.Close);
         Assert.Null(row.Volume);
         Assert.Equal(AdjustFlag.NoAdjust, row.AdjustFlag);
+    }
+
+    // === Code 字段反向格式化降级行为 ===
+
+    [Fact]
+    public void ParseKLineRow_UnknownCodeFormat_FallsBackToOriginal()
+    {
+        // 服务器极少数情况下可能返回 CodeFormatter 无法识别的代码（指数/ETF 特殊代码等），
+        // 解析层应保留原始字符串，不抛异常。
+        var cols = new[] { "2024-01-02", "unknownexchange.xxxxxx", "10.50", "10.80", "10.30", "10.60", "10.45", "1000000", "10500000.00", "1", "1.23", "1", "0.50", "0" };
+        var row = BaostockClient.ParseKLineRow(cols);
+
+        Assert.Equal("unknownexchange.xxxxxx", row.Code);
+        Assert.Equal(10.50m, row.Open);
+    }
+
+    [Fact]
+    public void ParseMinuteKLineRow_UnknownCodeFormat_FallsBackToOriginal()
+    {
+        var cols = new[] { "2024-01-02", "09:30:00", "weirdformat", "10.50", "10.80", "10.30", "10.60", "500000", "5250000.00", "1" };
+        var row = BaostockClient.ParseMinuteKLineRow(cols);
+
+        Assert.Equal("weirdformat", row.Code);
     }
 }

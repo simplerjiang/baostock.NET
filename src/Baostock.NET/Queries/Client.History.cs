@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Baostock.NET.Models;
 using Baostock.NET.Protocol;
+using Baostock.NET.Util;
 
 namespace Baostock.NET.Client;
 
@@ -16,7 +17,7 @@ public partial class BaostockClient
     /// <summary>
     /// 查询历史 K 线数据（日/周/月频）。自动按需分页拉取，流式 yield 每行。
     /// </summary>
-    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="code">证券代码，东方财富风格 <c>"SH600000"</c> / <c>"SZ000001"</c> / <c>"BJ430047"</c>；亦兼容 <c>"sh.600000"</c> / <c>"sh600000"</c> / <c>"600000.SH"</c> 等格式。</param>
     /// <param name="fields">查询字段，逗号分隔；为 <c>null</c> 时使用默认日频字段。</param>
     /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
     /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
@@ -44,14 +45,8 @@ public partial class BaostockClient
                 "请使用 QueryHistoryKDataPlusMinuteAsync 查询分钟级数据");
         }
 
-        if (code.Length != Framing.StockCodeLength)
-        {
-            throw new ArgumentException(
-                $"证券代码长度必须为 {Framing.StockCodeLength}（如 sh.600000），实际：'{code}'。",
-                nameof(code));
-        }
-
-        code = code.ToLowerInvariant();
+        // v1.2.0 BREAKING：对外接受东财风格（SH600000），内部翻译为 baostock 协议格式（sh.600000）。
+        code = CodeFormatter.ToBaostock(code);
         fields ??= DefaultDailyFields;
         startDate ??= "2017-07-01"; // DEFAULT_START_DATE from contants.py
         endDate ??= DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -136,7 +131,7 @@ public partial class BaostockClient
     /// <summary>
     /// 查询历史 K 线数据（分钟频：5/15/30/60 分钟）。自动按需分页拉取，流式 yield 每行。
     /// </summary>
-    /// <param name="code">证券代码，如 <c>"sh.600000"</c>。</param>
+    /// <param name="code">证券代码，东方财富风格 <c>"SH600000"</c> / <c>"SZ000001"</c> / <c>"BJ430047"</c>；亦兼容 <c>"sh.600000"</c> / <c>"sh600000"</c> / <c>"600000.SH"</c> 等格式。</param>
     /// <param name="fields">查询字段，逗号分隔；为 <c>null</c> 时使用默认分钟频字段。</param>
     /// <param name="startDate">开始日期，格式 <c>"yyyy-MM-dd"</c>。</param>
     /// <param name="endDate">结束日期，格式 <c>"yyyy-MM-dd"</c>。</param>
@@ -164,14 +159,8 @@ public partial class BaostockClient
                 "分钟频方法仅支持 FiveMinute/FifteenMinute/ThirtyMinute/SixtyMinute");
         }
 
-        if (code.Length != Framing.StockCodeLength)
-        {
-            throw new ArgumentException(
-                $"证券代码长度必须为 {Framing.StockCodeLength}（如 sh.600000），实际：'{code}'。",
-                nameof(code));
-        }
-
-        code = code.ToLowerInvariant();
+        // v1.2.0 BREAKING：对外接受东财风格（SH600000），内部翻译为 baostock 协议格式（sh.600000）。
+        code = CodeFormatter.ToBaostock(code);
         fields ??= DefaultMinuteFields;
         startDate ??= "2017-07-01";
         endDate ??= DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -233,7 +222,7 @@ public partial class BaostockClient
         return new MinuteKLineRow(
             Date: DateOnly.ParseExact(SafeCol(cols, 0), "yyyy-MM-dd", CultureInfo.InvariantCulture),
             Time: SafeCol(cols, 1),
-            Code: SafeCol(cols, 2),
+            Code: FormatModelCode(SafeCol(cols, 2)),
             Open: ParseNullableDecimal(SafeCol(cols, 3)),
             High: ParseNullableDecimal(SafeCol(cols, 4)),
             Low: ParseNullableDecimal(SafeCol(cols, 5)),
@@ -249,7 +238,7 @@ public partial class BaostockClient
         // date,code,open,high,low,close,preclose,volume,amount,adjustflag,turn,tradestatus,pctChg,isST
         return new KLineRow(
             Date: DateOnly.ParseExact(SafeCol(cols, 0), "yyyy-MM-dd", CultureInfo.InvariantCulture),
-            Code: SafeCol(cols, 1),
+            Code: FormatModelCode(SafeCol(cols, 1)),
             Open: ParseNullableDecimal(SafeCol(cols, 2)),
             High: ParseNullableDecimal(SafeCol(cols, 3)),
             Low: ParseNullableDecimal(SafeCol(cols, 4)),

@@ -21,6 +21,10 @@ public sealed class TcpTransport : ITransport
     private bool _connected;
     private bool _disposed;
 
+    // B1 (v1.2.0-preview5)：socket I/O 失败后置 true，使 IsConnected 立刻反映"半死"状态，
+    // 触发上层 BaostockClient.EnsureConnectedAsync 走重连+relogin 路径。
+    private bool _isBroken;
+
     /// <summary>用默认 <see cref="BaostockServer.Host"/> / <see cref="BaostockServer.Port"/> 构造。</summary>
     public TcpTransport()
         : this(BaostockServer.Host, BaostockServer.Port)
@@ -36,7 +40,44 @@ public sealed class TcpTransport : ITransport
     }
 
     /// <inheritdoc />
-    public bool IsConnected => _connected && _stream is not null && !_disposed;
+    /// <remarks>
+    /// 健康检查使用标准 TCP "half-dead" 探测：<c>Socket.Poll(0, SelectRead) == true &amp;&amp; Available == 0</c>
+    /// 表示对端已关闭（FIN 已收到，但本地还没正式 close）。Poll(0, ...) 是 O(1) 非阻塞调用，
+    /// 不会显著拖慢正常请求路径。同时一旦 SendAsync/ReceiveFrameAsync 抛过 IO/SocketException，
+    /// <c>_isBroken</c> 锁定为 true，无需再 Poll。
+    /// </remarks>
+    public bool IsConnected
+    {
+        get
+        {
+            if (_disposed || _isBroken || !_connected || _stream is null)
+            {
+                return false;
+            }
+            var socket = _client?.Client;
+            if (socket is null || !socket.Connected)
+            {
+                return false;
+            }
+            try
+            {
+                // Poll 返回 true 且 Available==0 → 对端已关闭半开连接。
+                if (socket.Poll(0, SelectMode.SelectRead) && socket.Available == 0)
+                {
+                    return false;
+                }
+                return true;
+            }
+            catch (SocketException)
+            {
+                return false;
+            }
+            catch (ObjectDisposedException)
+            {
+                return false;
+            }
+        }
+    }
 
     /// <inheritdoc />
     public async ValueTask ConnectAsync(CancellationToken ct = default)
@@ -46,6 +87,15 @@ public sealed class TcpTransport : ITransport
         {
             return;
         }
+
+        // B1：之前的连接可能因 socket 故障被标 broken，先彻底拆除残留 _client/_stream
+        // 再建新连接到原 host:port。Dispose 是幂等的，重复进入安全。
+        _stream?.Dispose();
+        _client?.Dispose();
+        _stream = null;
+        _client = null;
+        _connected = false;
+        _isBroken = false;
 
         var client = new TcpClient { NoDelay = true };
         try
@@ -68,11 +118,19 @@ public sealed class TcpTransport : ITransport
         ObjectDisposedException.ThrowIf(_disposed, this);
         var stream = _stream ?? throw new InvalidOperationException("尚未 ConnectAsync。");
 
-        await stream.WriteAsync(frame, ct).ConfigureAwait(false);
-        // 物理消息分隔符
-        var nl = new byte[] { NewLineByte };
-        await stream.WriteAsync(nl, ct).ConfigureAwait(false);
-        await stream.FlushAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await stream.WriteAsync(frame, ct).ConfigureAwait(false);
+            // 物理消息分隔符
+            var nl = new byte[] { NewLineByte };
+            await stream.WriteAsync(nl, ct).ConfigureAwait(false);
+            await stream.FlushAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or SocketException)
+        {
+            _isBroken = true;
+            throw;
+        }
     }
 
     /// <inheritdoc />
@@ -80,7 +138,15 @@ public sealed class TcpTransport : ITransport
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         var stream = _stream ?? throw new InvalidOperationException("尚未 ConnectAsync。");
-        return await ReadFrameAsync(stream, ct).ConfigureAwait(false);
+        try
+        {
+            return await ReadFrameAsync(stream, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or SocketException or EndOfStreamException)
+        {
+            _isBroken = true;
+            throw;
+        }
     }
 
     /// <summary>

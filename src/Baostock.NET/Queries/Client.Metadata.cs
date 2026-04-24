@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using Baostock.NET.Models;
 using Baostock.NET.Protocol;
+using Baostock.NET.Util;
 
 namespace Baostock.NET.Client;
 
@@ -106,7 +107,7 @@ public partial class BaostockClient
             foreach (var row in page.Rows)
             {
                 yield return new StockListRow(
-                    Code: row[0],
+                    Code: FormatModelCode(row[0]),
                     TradeStatus: row[1],
                     CodeName: row[2]);
             }
@@ -121,7 +122,7 @@ public partial class BaostockClient
     /// <summary>
     /// 查询证券基本资料。MSG 45/46。code 和 code_name 可同时为空（返回全部），code_name 支持模糊查询。
     /// </summary>
-    /// <param name="code">证券代码，为 <c>null</c> 时不按代码筛选。</param>
+    /// <param name="code">证券代码，为 <c>null</c>/空时不按代码筛选；非空时接受东财风格 <c>"SH600000"</c>，亦兼容 <c>"sh.600000"</c> 等格式。</param>
     /// <param name="codeName">证券名称（支持模糊查询），为 <c>null</c> 时不按名称筛选。</param>
     /// <param name="ct">取消令牌。</param>
     /// <returns>流式返回每行证券基本资料数据。</returns>
@@ -131,6 +132,10 @@ public partial class BaostockClient
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         await EnsureLoggedInAsync(ct).ConfigureAwait(false);
+
+        // v1.2.0 BREAKING：传入 code 需为东财风格（SH600000）或其它兼容格式，内部翻译为 baostock 协议格式。
+        // 为保持“不按代码筛选”语义，空 / null 不进行翻译。
+        var codeForBody = string.IsNullOrWhiteSpace(code) ? string.Empty : CodeFormatter.ToBaostock(code);
 
         var curPage = 1;
         while (true)
@@ -142,7 +147,7 @@ public partial class BaostockClient
                 Session.UserId ?? "anonymous",
                 curPage.ToString(CultureInfo.InvariantCulture),
                 Framing.DefaultPerPageCount.ToString(CultureInfo.InvariantCulture),
-                code ?? string.Empty,
+                codeForBody,
                 codeName ?? string.Empty);
 
             var frame = FrameCodec.EncodeFrame(MessageTypes.QueryStockBasicRequest, body);
@@ -161,7 +166,7 @@ public partial class BaostockClient
             foreach (var row in page.Rows)
             {
                 yield return new StockBasicRow(
-                    Code: row[0],
+                    Code: FormatModelCode(row[0]),
                     CodeName: row[1],
                     IpoDate: string.IsNullOrEmpty(row[2]) ? null : row[2],
                     OutDate: string.IsNullOrEmpty(row[3]) ? null : row[3],

@@ -1,4 +1,4 @@
-using Baostock.NET.Client;
+﻿using Baostock.NET.Client;
 using Baostock.NET.Models;
 using Baostock.NET.Protocol;
 using Baostock.NET.Tests.Client;
@@ -15,11 +15,16 @@ public class CorpQueryTests
         var transport = CreateTransportWithFixture("query_performance_express_report");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        _ = await client.QueryPerformanceExpressReportAsync(code: "sh.600000").ToListAsync();
+        _ = await client.QueryPerformanceExpressReportAsync(code: "SH600000").ToListAsync();
 
         Assert.Equal(2, transport.SentFrames.Count);
         var header = MessageHeader.Parse(transport.SentFrames[1].AsSpan(0, Framing.MessageHeaderLength));
         Assert.Equal("29", header.MessageType);
+
+        // 协议体断言：业绩快报入参 SH600000 应翻译为 sh.600000
+        var bodyText = System.Text.Encoding.UTF8.GetString(transport.SentFrames[1]);
+        Assert.Contains("sh.600000", bodyText);
+        Assert.DoesNotContain("SH600000", bodyText);
     }
 
     [Fact]
@@ -28,11 +33,11 @@ public class CorpQueryTests
         var transport = CreateTransportWithFixture("query_performance_express_report");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        var rows = await client.QueryPerformanceExpressReportAsync(code: "sh.600000").ToListAsync();
+        var rows = await client.QueryPerformanceExpressReportAsync(code: "SH600000").ToListAsync();
 
         Assert.True(rows.Count > 0);
         var first = rows[0];
-        Assert.Contains("sh.600000", first.Code);
+        Assert.Contains("SH600000", first.Code);
         Assert.NotNull(first.PerformanceExpPubDate);
     }
 
@@ -44,7 +49,7 @@ public class CorpQueryTests
         var transport = CreateTransportWithFixture("query_forecast_report");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        _ = await client.QueryForecastReportAsync(code: "sh.600000").ToListAsync();
+        _ = await client.QueryForecastReportAsync(code: "SH600000").ToListAsync();
 
         Assert.Equal(2, transport.SentFrames.Count);
         var header = MessageHeader.Parse(transport.SentFrames[1].AsSpan(0, Framing.MessageHeaderLength));
@@ -57,7 +62,7 @@ public class CorpQueryTests
         var transport = CreateTransportWithFixture("query_forecast_report");
         await using var client = new BaostockClient(transport, "anonymous", "123456") { AutoLogin = true };
 
-        var rows = await client.QueryForecastReportAsync(code: "sh.600000").ToListAsync();
+        var rows = await client.QueryForecastReportAsync(code: "SH600000").ToListAsync();
 
         // Fixture has empty data (no forecast records for sh.600000 in the captured period)
         Assert.True(rows.Count >= 0);

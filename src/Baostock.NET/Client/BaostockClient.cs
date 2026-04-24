@@ -23,8 +23,30 @@ public sealed partial class BaostockClient : IAsyncDisposable
     private readonly string? _autoPassword;
     private LoginResult? _cachedLoginResult;
 
+    // B1 (v1.2.0-preview5)：缓存最近一次成功登录的凭据，供 EnsureConnectedAsync 在 socket
+    // 半死/重连时复用做 relogin。
+    // TODO v1.3.0：改用 SecureString / ProtectedData，避免内存里以明文长期保存。
+    private (string UserId, string Password)? _credentials;
+
+    // B1：避免重连递归 / 死循环。EnsureConnectedAsync 自带最多 1 次重试，期间任何
+    // 内部 Login/Connect 调用必须跳过自愈逻辑。
+    // 改为 int + Interlocked.CompareExchange 做线程安全守门（0=空闲，1=进行中），
+    // 防止多线程并发 query 同时进入 ReconnectAndReloginAsync。
+    private int _reconnectInProgress;
+
     /// <summary>当前会话状态。</summary>
     public BaostockSession Session { get; } = new();
+
+    /// <summary>
+    /// 上层应用语义的"已登录"：会话登录态成立 <b>且</b> 底层 socket 健康。
+    /// 与 <see cref="BaostockSession.IsLoggedIn"/>（仅内存登录态）的区别是：socket 半死时本属性为 false，
+    /// 而 <c>Session.IsLoggedIn</c> 仍为 true。给上层 UI / status 接口用，避免显示"已登录"但下个查询炸 IOException。
+    /// 新增于 v1.2.0-preview5（B1 修复）。
+    /// </summary>
+    public bool IsLoggedIn => Session.IsLoggedIn && _transport.IsConnected;
+
+    /// <summary>底层 transport 是否处于已连接状态（B1 自愈用）。</summary>
+    public bool IsConnected => _transport.IsConnected;
 
     /// <summary>
     /// 是否启用"按需自动登录"。默认 <c>false</c>，避免隐式行为；
@@ -125,6 +147,8 @@ public sealed partial class BaostockClient : IAsyncDisposable
 
         Session.UserId = userId;
         Session.IsLoggedIn = true;
+        // B1：缓存凭据用于后续自愈 relogin
+        _credentials = (userId, password);
         _cachedLoginResult = new LoginResult(errorCode, errorMsg, method, serverUserId);
         return _cachedLoginResult;
     }
@@ -179,9 +203,35 @@ public sealed partial class BaostockClient : IAsyncDisposable
     /// <summary>
     /// 在未登录时按 <see cref="AutoLogin"/> + 构造时缓存的 user/password 自动登录；
     /// 已登录则 no-op。供未来 query_* 实现复用，外部代码无需直接调用。
+    /// v1.2.0-preview5：内嵌 B1 自愈——若 <see cref="ITransport.IsConnected"/> 为 false 但已有
+    /// 缓存凭据（曾经 login 成功），自动 dispose+重连+relogin 1 次（最多 1 次，避免死循环）。
     /// </summary>
     internal async Task EnsureLoggedInAsync(CancellationToken ct = default)
     {
+        // 健康路径：登录态 + socket 健康，直接返回（IsConnected 是 O(1) Poll）。
+        if (Session.IsLoggedIn && _transport.IsConnected)
+        {
+            return;
+        }
+
+        // ── B1 自愈分支 ───────────────────────────────────────────────
+        // 已经在 reconnect 流程内（防止 LoginAsync 内部递归触发自愈）→ 直接走原始路径。
+        if (Volatile.Read(ref _reconnectInProgress) == 0)
+        {
+            // 选凭据：优先 _credentials（最近一次成功 login），fallback _autoUserId/_autoPassword。
+            (string userId, string password)? creds = _credentials
+                ?? (AutoLogin && !string.IsNullOrEmpty(_autoUserId) && _autoPassword is not null
+                    ? (_autoUserId, _autoPassword)
+                    : null);
+
+            if (creds is not null)
+            {
+                await ReconnectAndReloginAsync(creds.Value.userId, creds.Value.password, ct).ConfigureAwait(false);
+                return;
+            }
+        }
+
+        // 无凭据 / 未启用 AutoLogin：保持原行为。
         if (Session.IsLoggedIn)
         {
             return;
@@ -192,6 +242,59 @@ public sealed partial class BaostockClient : IAsyncDisposable
                 "not logged in (and AutoLogin disabled or credentials missing)");
         }
         await LoginAsync(_autoUserId, _autoPassword, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// B1 自愈核心：清掉登录缓存 → 重连 transport → 重新 login。最多重试 1 次，失败抛 <see cref="BaostockException"/>。
+    /// </summary>
+    private async Task ReconnectAndReloginAsync(string userId, string password, CancellationToken ct)
+    {
+        // CAS 守门：同一时刻只允许一个线程真正跑 reconnect+relogin。
+        if (Interlocked.CompareExchange(ref _reconnectInProgress, 1, 0) != 0)
+        {
+            // 已有其他线程在 reconnect，等它完成（最多 ~100ms）。
+            for (var i = 0; i < 10; i++)
+            {
+                await Task.Delay(10, ct).ConfigureAwait(false);
+                if (_transport.IsConnected && Session.IsLoggedIn)
+                {
+                    return;
+                }
+            }
+            throw new BaostockException("reconnect_in_progress_timeout",
+                "another reconnect is already running and did not finish within 100ms");
+        }
+        try
+        {
+            // 强制让下次 LoginAsync 真发包：清掉登录缓存。
+            Session.IsLoggedIn = false;
+            _cachedLoginResult = null;
+
+            // ConnectAsync 自身已能识别 broken/未连接状态并拆旧建新（见 TcpTransport.ConnectAsync）。
+            try
+            {
+                await _transport.ConnectAsync(ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                throw new BaostockException("reconnect_failed",
+                    $"baostock 自愈重连失败：{ex.Message}");
+            }
+
+            try
+            {
+                await LoginAsync(userId, password, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException and not BaostockException)
+            {
+                throw new BaostockException("relogin_failed",
+                    $"baostock 自愈 relogin 失败：{ex.Message}");
+            }
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _reconnectInProgress, 0);
+        }
     }
 
     private static void ThrowFromExceptionFrame(string body)
