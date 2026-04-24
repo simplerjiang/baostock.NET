@@ -45,6 +45,9 @@ public class CninfoSourceIntegrationTests
     {
         using var server = new InMemoryCninfoServer();
         server.Setup("POST", "/new/hisAnnouncement/query", SampleResponseJson);
+        // N-03：改走线上 topSearch/query 获取真实 orgId，不再合成。
+        server.Setup("POST", "/new/information/topSearch/query",
+            """[{"code":"600519","orgId":"gssh0600519","zwjc":"贵州茅台"}]""");
 
         var source = new CninfoSource(baseUri: server.BaseUri, pdfBaseUri: server.BaseUri);
         var rows = await source.QueryAnnouncementsAsync(new CninfoAnnouncementRequest(
@@ -60,11 +63,12 @@ public class CninfoSourceIntegrationTests
         Assert.Equal("finalpage/2026-04-17/1225114741.PDF", rows[0].AdjunctUrl);
         Assert.Equal("1225114999", rows[1].AnnouncementId);
 
-        // 验证发出去的表单至少包含 stock 与 column 关键字段
-        var captured = Assert.Single(server.Received);
-        Assert.Equal("POST", captured.Method);
-        Assert.Equal("/new/hisAnnouncement/query", captured.Path);
-        var bodyText = Encoding.UTF8.GetString(captured.Body);
+        // 验证：先打 topSearch 查 orgId，再打 hisAnnouncement；且表单含真实 orgId。
+        var received = server.Received;
+        Assert.Contains(received, r => r.Path == "/new/information/topSearch/query");
+        var annReq = Assert.Single(received, r => r.Path == "/new/hisAnnouncement/query");
+        Assert.Equal("POST", annReq.Method);
+        var bodyText = Encoding.UTF8.GetString(annReq.Body);
         Assert.Contains("stock=600519%2Cgssh0600519", bodyText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("column=sse", bodyText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("pageNum=1", bodyText, StringComparison.OrdinalIgnoreCase);

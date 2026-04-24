@@ -222,24 +222,44 @@ public sealed class SinaIncomeStatementSource : IFinancialStatementSource
                     var value = SafeParseDecimal(valueStr);
                     switch (field)
                     {
+                        // 营业总收入 — 新浪 2026 线上实际字段名为 BIZTOTINCO（旧 fixture 用 TOTAREVE / TOTOPREV）。
+                        case "BIZTOTINCO":
                         case "TOTAREVE":
                         case "TOTOPREV":
                             totalOperateIncome ??= value; break;
+                        // 营业收入 — 线上字段 BIZINCO。
+                        case "BIZINCO":
                         case "OPERREVE":
                         case "OPERREV":
                             operateIncome ??= value; break;
+                        // 营业总成本 — 线上字段 BIZTOTCOST。
+                        case "BIZTOTCOST":
                         case "TOTOPEREXPE":
                         case "TOTAOPER":
                             totalOperateCost ??= value; break;
-                        case "OPERCOST": operateCost ??= value; break;
-                        case "SELLEXPE": saleExpense ??= value; break;
+                        // 营业成本 — 线上字段 BIZCOST。
+                        case "BIZCOST":
+                        case "OPERCOST":
+                            operateCost ??= value; break;
+                        // 销售费用 — 线上字段 SALESEXPE。
+                        case "SALESEXPE":
+                        case "SELLEXPE":
+                            saleExpense ??= value; break;
                         case "MANAEXPE": manageExpense ??= value; break;
                         case "DEVEEXPE": researchExpense ??= value; break;
-                        case "FINAEXPE": financeExpense ??= value; break;
+                        // 财务费用 — 线上字段 FINEXPE。
+                        case "FINEXPE":
+                        case "FINAEXPE":
+                            financeExpense ??= value; break;
+                        // 营业利润 — 线上字段 PERPROFIT。
+                        case "PERPROFIT":
                         case "OPERPROF":
                         case "OPERPROFIT":
                             operateProfit ??= value; break;
-                        case "TOTPROFI": totalProfit ??= value; break;
+                        // 利润总额 — 线上字段 TOTPROFIT。
+                        case "TOTPROFIT":
+                        case "TOTPROFI":
+                            totalProfit ??= value; break;
                         case "INCOTAXEXPE": incomeTax ??= value; break;
                         case "NETPROF":
                         case "NETPROFIT":

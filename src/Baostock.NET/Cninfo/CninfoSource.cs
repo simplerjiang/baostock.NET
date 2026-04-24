@@ -38,22 +38,26 @@ public sealed class CninfoSource : ICninfoSource
     private readonly SourceHealthRegistry? _health;
     private readonly string _baseUri;
     private readonly string _pdfBaseUri;
+    private readonly CninfoOrgIdResolver _orgIdResolver;
 
     /// <summary>构造一个巨潮数据源实例。</summary>
     /// <param name="http">HTTP 客户端；为 <see langword="null"/> 时使用 <see cref="HttpDataClient.Default"/>。</param>
     /// <param name="health">健康注册表；为 <see langword="null"/> 时不做健康统计。</param>
     /// <param name="baseUri">公告查询基础 URI；为 <see langword="null"/> 时使用 <see cref="DefaultBaseUri"/>。</param>
     /// <param name="pdfBaseUri">PDF 静态资源基础 URI；为 <see langword="null"/> 时使用 <see cref="DefaultPdfBaseUri"/>。</param>
+    /// <param name="orgIdResolver">orgId 解析器；为 <see langword="null"/> 时按 <paramref name="http"/> / <paramref name="baseUri"/> 构造一个。</param>
     public CninfoSource(
         HttpDataClient? http = null,
         SourceHealthRegistry? health = null,
         Uri? baseUri = null,
-        Uri? pdfBaseUri = null)
+        Uri? pdfBaseUri = null,
+        CninfoOrgIdResolver? orgIdResolver = null)
     {
         _http = http ?? HttpDataClient.Default;
         _health = health;
         _baseUri = (baseUri?.ToString() ?? DefaultBaseUri).TrimEnd('/');
         _pdfBaseUri = (pdfBaseUri?.ToString() ?? DefaultPdfBaseUri).TrimEnd('/');
+        _orgIdResolver = orgIdResolver ?? new CninfoOrgIdResolver(_http, baseUri);
     }
 
     /// <inheritdoc />
@@ -68,8 +72,11 @@ public sealed class CninfoSource : ICninfoSource
         try
         {
             var sc = CodeFormatter.Parse(request.Code);
+            // 通过 topSearch/query 在线解析真实 orgId（深市创业板 / 科创板 / 部分股票的
+            // orgId 并不符合 gss{h|z|b}0{6位} 拼接规则，必须查线上）。
+            var orgId = await _orgIdResolver.ResolveAsync(sc.Code6, ct).ConfigureAwait(false);
             var url = _baseUri + QueryPath;
-            var form = BuildQueryForm(sc, request);
+            var form = BuildQueryForm(sc, orgId, request);
             var headers = BuildQueryHeaders();
             var body = await _http.PostFormAsync(url, form, headers, QueryTimeout, ct).ConfigureAwait(false);
             var rows = ParseAnnouncements(body, request.Code);
@@ -150,9 +157,10 @@ public sealed class CninfoSource : ICninfoSource
 
     /// <summary>构造公告查询表单体。</summary>
     /// <param name="sc">标准化证券代码。</param>
+    /// <param name="orgId">通过 <see cref="CninfoOrgIdResolver"/> 在线解析得到的真实 orgId。</param>
     /// <param name="request">查询请求。</param>
     /// <returns>表单字典。</returns>
-    internal static Dictionary<string, string> BuildQueryForm(StockCode sc, CninfoAnnouncementRequest request)
+    internal static Dictionary<string, string> BuildQueryForm(StockCode sc, string orgId, CninfoAnnouncementRequest request)
     {
         var pageNum = request.PageNum <= 0 ? 1 : request.PageNum;
         var pageSize = request.PageSize <= 0 ? 30 : request.PageSize;
@@ -161,7 +169,7 @@ public sealed class CninfoSource : ICninfoSource
             : string.Empty;
         return new Dictionary<string, string>
         {
-            ["stock"] = sc.CninfoStock,
+            ["stock"] = sc.Code6 + "," + orgId,
             ["tabName"] = "fulltext",
             ["pageSize"] = pageSize.ToString(CultureInfo.InvariantCulture),
             ["pageNum"] = pageNum.ToString(CultureInfo.InvariantCulture),

@@ -84,4 +84,62 @@ public class SinaIncomeStatementParsingTests
             SinaIncomeStatementSource.ParseResponse(json, "SH600519"));
         Assert.Equal("Sina", ex.SourceName);
     }
+
+    /// <summary>
+    /// N-01 回归：新浪 2026 线上利润表实际字段名改为 <c>BIZTOTINCO</c> / <c>BIZINCO</c> / <c>BIZTOTCOST</c> /
+    /// <c>BIZCOST</c> / <c>SALESEXPE</c> / <c>FINEXPE</c> / <c>PERPROFIT</c> / <c>TOTPROFIT</c>，
+    /// 本用例保证新字段别名被正确映射到 <see cref="Baostock.NET.Models.FullIncomeStatementRow"/> 顶层字段上。
+    /// </summary>
+    [Fact]
+    public void Parse_LiveSinaFieldAliases_MappedToTopLevel()
+    {
+        const string liveShapeJson = @"{
+  ""result"": {
+    ""status"": {""code"": 0, ""msg"": """"},
+    ""data"": {
+      ""report_list"": {
+        ""20241231"": {
+          ""rType"": ""合并期末"",
+          ""data"": [
+            {""item_field"": ""BIZTOTINCO"",   ""item_value"": ""458502407000.000000""},
+            {""item_field"": ""BIZINCO"",      ""item_value"": ""456451731000.000000""},
+            {""item_field"": ""BIZTOTCOST"",   ""item_value"": ""409076613000.000000""},
+            {""item_field"": ""BIZCOST"",      ""item_value"": ""335989528000.000000""},
+            {""item_field"": ""SALESEXPE"",    ""item_value"": ""42891490000.000000""},
+            {""item_field"": ""MANAEXPE"",     ""item_value"": ""16092311000.000000""},
+            {""item_field"": ""DEVEEXPE"",     ""item_value"": ""17787624000.000000""},
+            {""item_field"": ""FINEXPE"",      ""item_value"": ""-5903546000.000000""},
+            {""item_field"": ""PERPROFIT"",    ""item_value"": ""52978773000.000000""},
+            {""item_field"": ""TOTPROFIT"",    ""item_value"": ""53085343000.000000""},
+            {""item_field"": ""INCOTAXEXPE"",  ""item_value"": ""8565147000.000000""},
+            {""item_field"": ""NETPROFIT"",    ""item_value"": ""44520196000.000000""},
+            {""item_field"": ""PARENETP"",     ""item_value"": ""43945411000.000000""},
+            {""item_field"": ""BASICEPS"",     ""item_value"": ""5.800000""},
+            {""item_field"": ""DILUTEDEPS"",   ""item_value"": ""5.760000""}
+          ]
+        }
+      }
+    }
+  }
+}";
+        var rows = SinaIncomeStatementSource.ParseResponse(liveShapeJson, "SZ000333");
+        var r = Assert.Single(rows);
+
+        Assert.Equal(new DateOnly(2024, 12, 31), r.ReportDate);
+        Assert.Equal(458502407000m, r.TotalOperateIncome);
+        Assert.Equal(456451731000m, r.OperateIncome);
+        Assert.Equal(409076613000m, r.TotalOperateCost);
+        Assert.Equal(335989528000m, r.OperateCost);
+        Assert.Equal(42891490000m, r.SaleExpense);
+        Assert.Equal(16092311000m, r.ManageExpense);
+        Assert.Equal(17787624000m, r.ResearchExpense);
+        Assert.Equal(-5903546000m, r.FinanceExpense);
+        Assert.Equal(52978773000m, r.OperateProfit);
+        Assert.Equal(53085343000m, r.TotalProfit);
+        Assert.Equal(8565147000m, r.IncomeTax);
+        Assert.Equal(44520196000m, r.NetProfit);
+        Assert.Equal(43945411000m, r.ParentNetProfit);
+        Assert.Equal(5.80m, r.BasicEps);
+        Assert.Equal(5.76m, r.DilutedEps);
+    }
 }
