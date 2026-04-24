@@ -103,6 +103,13 @@ public sealed class SinaCashFlowSource : IFinancialStatementSource
             rows = rows.Where(r => set.Contains(r.ReportDate)).ToList();
         }
 
+        // 与 EastMoney 数据源保持一致：空结果视为失败，避免 hedge runner 在此源预先完成时
+        // 静默地返回 0 行并被上层误认为 ok＋ rowCount=0。
+        if (rows.Count == 0)
+        {
+            throw new DataSourceException(Name, $"Sina getFinanceReport2022 (llb) returned no rows for '{request.Code}'.");
+        }
+
         rows.Sort((a, b) => b.ReportDate.CompareTo(a.ReportDate));
         return rows;
     }
@@ -149,7 +156,9 @@ public sealed class SinaCashFlowSource : IFinancialStatementSource
         foreach (var period in reportList.EnumerateObject())
         {
             if (period.Value.ValueKind != JsonValueKind.Object) continue;
-            if (!DateOnly.TryParseExact(period.Name, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var reportDate))
+            // 新浪实际返回 period key 为 "yyyyMMdd"（如 "20241231"），
+            // 同时为兼容既有单元测试 fixture 里 "yyyy-MM-dd" 写法，两种格式都接受。
+            if (!DateOnly.TryParseExact(period.Name, new[] { "yyyyMMdd", "yyyy-MM-dd" }, CultureInfo.InvariantCulture, DateTimeStyles.None, out var reportDate))
             {
                 continue;
             }
