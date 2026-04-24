@@ -1,6 +1,6 @@
 # Baostock.NET 用户验收测试手册
 
-> 版本：v1.3.0（含 Sprint 3 财报三表 + 巨潮公告/PDF）
+> 版本：v1.3.1（含 I6/I7/I8 交易所覆盖硬性用例）
 > 最近更新：2026-04-24
 
 ## 适用范围
@@ -161,6 +161,32 @@ v1.2.0-preview3 已知缺陷：socket 死后 `/api/session/login` 仍返回 `ok=
 | I3 | 下载完成后用 PDF reader（Edge / Acrobat）打开文件 | 文件大小 **> 100KB**（年报一般 1MB+），正文可阅读，无乱码 | 文件大小 < 10KB 或打不开 → blocker（极可能下到 HTML 错误页） |
 | I4 | 分类筛选验证：改 `category=SemiAnnualReport`，其余同 I1 | 返回的 `title` 全部含 "半年度报告" 或 "半年报" | 出现其他类型 → 记 bug（分类参数没生效） |
 | I5 | 失败分流演练：code=`SZ000001`，`category=QuarterlyReport`，`startDate=2024-01-01`，Send | `ok=true`，rowCount ≥ 1；若为 0 → 按预期行为处理（某些公司季报不一定全披露），不算 bug | — |
+
+### I6 · 创业板覆盖（硬性）
+
+**目的**：防 Bug-N-03 回归（v1.2 曾发生创业板 announcements 静默返回 0 行）。
+
+- 代码：`SZ300750`（宁德时代）
+- category：`AnnualReport`
+- 时间段：`2024-01-01 ~ 2025-12-31`
+- 期望：`rowCount ≥ 1`，至少 1 条 title 含“年度报告”
+- 失败分流：rowCount=0 → **直接 Blocker**，不要 retry，不要“以为该公司没发年报”
+
+### I7 · 科创板覆盖（硬性）
+
+- 代码：`SH688981`（中芯国际）
+- category：`AnnualReport`
+- 时间段：`2024-01-01 ~ 2025-12-31`
+- 期望：`rowCount ≥ 1`，至少 1 条 title 含“中芯国际”
+- 失败分流：同 I6
+
+### I8 · 北交所覆盖（硬性）
+
+- 代码：`BJ430047`（诺思兰德）或任一北交所活跃公司
+- category：`All`（北交所公司公告少，分类限制会频繁 0 行）
+- 时间段：`2025-01-01 ~ 2025-12-31`
+- 期望：`rowCount ≥ 1`（北交所公司总有定期公告）
+- 失败分流：rowCount=0 → 换另一家北交所活跃公司（如 `BJ838924` / `BJ835174`），若仍 0 → Blocker
 
 ### Part G — 健康态快速自检（启动后 smoke test）
 

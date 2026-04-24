@@ -142,4 +142,42 @@ public class SinaIncomeStatementParsingTests
         Assert.Equal(5.80m, r.BasicEps);
         Assert.Equal(5.76m, r.DilutedEps);
     }
+
+    /// <summary>
+    /// Finding B-ICBC 回归：银行/券商利润表模板上游不返回 <c>BIZTOTINCO</c>（营业总收入），
+    /// 但返回 <c>BIZINCO</c>（营业收入）和 <c>INTEINCO</c>（利息收入，银行标识字段）。
+    /// 银行语义上 “营业总收入 == 营业收入”，此处验证在 TotalOperateIncome 缺失时
+    /// 从 OperateIncome 兜底复制。
+    /// </summary>
+    [Fact]
+    public void Parse_BankTemplate_CopiesOperateIncomeToTotalOperate()
+    {
+        const string bankJson = @"{
+  ""result"": {
+    ""status"": {""code"": 0, ""msg"": """"},
+    ""data"": {
+      ""report_list"": {
+        ""20251231"": {
+          ""rType"": ""合并期末"",
+          ""data"": [
+            {""item_field"": ""BIZINCO"",      ""item_value"": ""838270000000.000000""},
+            {""item_field"": ""INTEINCO"",     ""item_value"": ""1331831000000.000000""},
+            {""item_field"": ""NETINTEINCO"",  ""item_value"": ""635126000000.000000""},
+            {""item_field"": ""NETPROFIT"",    ""item_value"": ""365709000000.000000""}
+          ]
+        }
+      }
+    }
+  }
+}";
+        var rows = SinaIncomeStatementSource.ParseResponse(bankJson, "SH601398");
+        var r = Assert.Single(rows);
+
+        Assert.Equal(838270000000m, r.OperateIncome);
+        Assert.Equal(838270000000m, r.TotalOperateIncome); // 从 OperateIncome 兜底
+        Assert.Equal(r.OperateIncome, r.TotalOperateIncome);
+        // 兜底不应修改 RawFields（保留上游原始字段集，无 BIZTOTINCO）
+        Assert.False(r.RawFields!.ContainsKey("BIZTOTINCO"));
+        Assert.True(r.RawFields.ContainsKey("INTEINCO"));
+    }
 }

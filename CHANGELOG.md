@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.3.1 — 2026-04-24
+
+### 修复
+
+- **银行/券商利润表 `TotalOperateIncome` 字段兜底**（Finding B-ICBC）：
+  - 上游东财和新浪对银行/券商公司的利润表响应原生不包含 `TOTAL_OPERATE_INCOME`/`BIZTOTINCO`（营业总收入），但都有 `OPERATE_INCOME`/`BIZINCO`（营业收入），在银行业务中两者语义等价。
+  - v1.3.1 起,两个源 ParseResponse 在 `TotalOperateIncome == null && OperateIncome != null` 时自动从 `OperateIncome` 复制值。
+  - 影响：工行 SH601398 / 建行 SH601939 等银行股的利润表 `totalOperateIncome` 现在返回非空数值（等于 `operateIncome`）。
+  - 非银行股不受影响（原本就有独立 `TotalOperateIncome`，`??=` 不触发）。
+
+### 文档
+
+- `README.UserAgentTest.md` 模块 I 新增 **I6/I7/I8 硬性用例**：
+  - I6：创业板 `SZ300750` AnnualReport（防 Bug-N-03 回归）
+  - I7：科创板 `SH688981` AnnualReport
+  - I8：北交所 `BJ430047` All
+  - 失败均为 Blocker，不允许"以为该公司没发公告"的误判。
+
+### 测试
+
+- 新增 `Parse_BankTemplate_CopiesOperateIncomeToTotalOperate`（Sina + EastMoney 各一，共 +2）
+- 测试基线：305 passed / 0 failed / 1 skipped（较 v1.3.0 +2）
+- 构建：0 warning / 0 error
+
+### Breaking Changes
+
+**无**。完全兼容 v1.3.0 API。
+
 ## v1.3.0 — 2026-04-24
 
 ### 新增（HTTP 多源扩展）

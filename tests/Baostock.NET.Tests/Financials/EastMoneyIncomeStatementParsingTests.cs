@@ -76,4 +76,34 @@ public class EastMoneyIncomeStatementParsingTests
             EastMoneyIncomeStatementSource.ParseResponse(@"{""status"":""ok""}", "SH600519"));
         Assert.Equal("EastMoney", ex.SourceName);
     }
+
+    /// <summary>
+    /// Finding B-ICBC 回归（EastMoney 分支）：银行模板（companyType=3，如 SH601398 工行）
+    /// 实测响应无 <c>TOTAL_OPERATE_INCOME</c>，但 <c>OPERATE_INCOME</c> 有值。业务语义上
+    /// 银行的营业总收入 == 营业收入，此处验证在 TotalOperateIncome 缺失时从 OperateIncome 兜底。
+    /// </summary>
+    [Fact]
+    public void Parse_BankTemplate_CopiesOperateIncomeToTotalOperate()
+    {
+        const string bankJson = @"{
+  ""data"": [
+    {
+      ""SECUCODE"": ""601398.SH"",
+      ""REPORT_DATE"": ""2025-12-31 00:00:00"",
+      ""REPORT_TYPE"": ""年报"",
+      ""OPERATE_INCOME"": ""838270000000"",
+      ""INTEREST_NI"": ""635126000000"",
+      ""INTEREST_INCOME"": ""1331831000000"",
+      ""NETPROFIT"": ""365709000000""
+    }
+  ]
+}";
+        var rows = EastMoneyIncomeStatementSource.ParseResponse(bankJson, "SH601398");
+        var r = Assert.Single(rows);
+
+        Assert.Equal(838270000000m, r.OperateIncome);
+        Assert.Equal(838270000000m, r.TotalOperateIncome); // 从 OperateIncome 兜底
+        Assert.Equal(r.OperateIncome, r.TotalOperateIncome);
+        Assert.True(r.RawFields!.ContainsKey("INTEREST_NI"));
+    }
 }

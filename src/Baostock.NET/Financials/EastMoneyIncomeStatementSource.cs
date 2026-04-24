@@ -163,13 +163,21 @@ public sealed class EastMoneyIncomeStatementSource : IFinancialStatementSource
             var raw = EastMoneyCompanyTypeResolver.FlattenRawFields(item);
             var reportDate = EastMoneyCompanyTypeResolver.SafeParseDate(raw.GetValueOrDefault("REPORT_DATE")) ?? default;
 
+            // 银行/券商模板兜底：上游对银行股（companyType=3）不返回 TOTAL_OPERATE_INCOME 字段，
+            // 但 OPERATE_INCOME 有值（如 SH601398 工行 2025 年报 OPERATE_INCOME=8.38e11，TOTAL_OPERATE_INCOME 缺失）。
+            // 业务语义上银行的“营业总收入 == 营业收入”，此处在 TotalOperateIncome 仍为 null 时复制一次，
+            // 仅在 null 时触发，不会影响非银股。
+            var totalOperateIncome = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("TOTAL_OPERATE_INCOME"));
+            var operateIncome = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("OPERATE_INCOME"));
+            totalOperateIncome ??= operateIncome;
+
             var row = new FullIncomeStatementRow
             {
                 Code = normalizedCode,
                 ReportDate = reportDate,
                 ReportTitle = raw.GetValueOrDefault("REPORT_TYPE"),
-                TotalOperateIncome = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("TOTAL_OPERATE_INCOME")),
-                OperateIncome = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("OPERATE_INCOME")),
+                TotalOperateIncome = totalOperateIncome,
+                OperateIncome = operateIncome,
                 TotalOperateCost = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("TOTAL_OPERATE_COST")),
                 OperateCost = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("OPERATE_COST")),
                 SaleExpense = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("SALE_EXPENSE")),

@@ -272,6 +272,13 @@ public sealed class SinaIncomeStatementSource : IFinancialStatementSource
                 }
             }
 
+            // 银行/券商模板兜底：上游（新浪 Sina / 东财 EastMoney 同样如此）对银行股
+            // 不返回 BIZTOTINCO（营业总收入），但有 BIZINCO（营业收入）。业务语义上银行的
+            // “营业总收入 == 营业收入”，此处在 TotalOperateIncome 仍为 null 时做一次兜底复制，
+            // 避免下游交易员前端在硬编 TotalOperateIncome 时对银行股看到空值。
+            // 仅在 null 时触发，不会覆盖非银股已有的 TotalOperateIncome。
+            totalOperateIncome ??= operateIncome;
+
             rows.Add(new FullIncomeStatementRow
             {
                 Code = normalizedCode,
