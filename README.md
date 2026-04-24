@@ -7,6 +7,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://simplerjiang.github.io/baostock.NET/)
 
+> **🎉 v1.2.0 正式发布**（2026-04-24）：新增三源实时行情 + 双源历史 K 线 + TCP 自愈 + TestUI 子项目。
+> 包含 4 条 BREAKING CHANGES（代码格式 / 异常类型 / Models 输出 / IsLoggedIn 语义）。
+> 详见 [v1.2.0 专集](docs/v1.2.0/README.md) 与 [CHANGELOG](CHANGELOG.md)。
+
 ## 快速开始
 
 ```bash
@@ -137,16 +141,42 @@ foreach (var r in rows.Take(3))
 
 ## 特性
 
-- **纯 .NET** — 无 Python 依赖、无 IPC、无嵌入解释器
+### 核心
+- **纯 .NET 9** — 无 Python 依赖、无 IPC、无嵌入解释器
 - **async/await** — 全异步，`IAsyncEnumerable<T>` 流式返回大结果集
-- **强类型** — 每个 query 有独立 record（`KLineRow`, `ProfitRow`, ...），字段类型推断为 `DateOnly` / `decimal` / `long`
+- **强类型** — 每个 query 独立 record（`KLineRow`、`ProfitRow`、`RealtimeQuote`、`EastMoneyKLineRow` 等）
 - **自动登录** — `CreateAndLoginAsync()` 一行搞定
 - **可测试** — 协议层与传输层分离，`ITransport` 可替换
+
+### v1.2.0 新增
+- **多源 Hedged Requests** — 500ms hedge 间隔，首个成功胜出，剩余自动取消
+- **SourceHealthRegistry** — 连续 3 次失败自动进入 30s 冷却，不影响其他源
+- **TCP 自愈** — 半死检测（`socket.Poll` + `IsConnected` 属性），断线后自动 reconnect + relogin（CAS 线程安全，最多 1 次重试）
+- **统一证券代码格式** — 东财风格 `SH600519` 为标准；`CodeFormatter` 向后兼容 `sh.600519` / `sh600519` / `600519.SH` / `1.600519` 等格式
+- **TestUI 子项目** — Web 前端 + minimal API，37 endpoint + 压测面板，用于交易员手动验收 + 开发者冒烟 + 小规模压测
+
+## TestUI 子项目（v1.2.0 新增）
+
+用于交易员手动验收与开发者冒烟测试的内置 Web UI：
+
+```bash
+dotnet run --project src/Baostock.NET.TestUI
+```
+
+浏览器访问 `http://localhost:5050`，可逐项测试 37 个端点，包含 28 个 baostock TCP 接口、3 个多源 HTTP 接口、6 个内部运维接口，并支持小规模压测。
+
+**硬约束**：baostock TCP 路径受 `concurrency ≤ 1 / duration ≤ 30s / total ≤ 200` 硬锁保护（同一 TCP 长连接非线程安全）。
+
+详见 [TestUI 使用指南](docs/v1.2.0/testui.md) 与 [交易员测试手册](README.UserAgentTest.md)。
 
 ## 要求
 
 - .NET 9 SDK
-- 网络可达 `public-api.baostock.com:10030`（TCP）
+- 网络可达 `public-api.baostock.com:10030`（TCP，用于 `Query*Async` 系列）
+- 网络可达以下 HTTP 数据源（用于 v1.2.0 多源 API `GetRealtimeQuote*Async` / `GetHistoryKLineAsync`）：
+  - `hq.sinajs.cn`（Sina 实时）
+  - `qt.gtimg.cn` / `web.ifzq.gtimg.cn`（Tencent 实时 + K 线）
+  - `push2.eastmoney.com` / `push2his.eastmoney.com`（EastMoney 实时 + K 线）
 
 ## 构建与测试
 
@@ -155,6 +185,15 @@ dotnet build
 dotnet test                                    # 离线单测
 dotnet test --filter "Category=Live"           # 联网集成测试
 ```
+
+## 文档索引
+
+- [v1.2.0 专集](docs/v1.2.0/README.md) — 架构 / 数据源 / 迁移指南 / TestUI 使用
+- [入门指南](docs/getting-started.md) — 安装、Session、IAsyncEnumerable、错误处理
+- [CHANGELOG](CHANGELOG.md) — 各版本变更摘要
+- [ROADMAP](docs/ROADMAP.md) — v1.3.0+ 规划（财报三表、巨潮 PDF、深度数据）
+- [交易员测试手册](README.UserAgentTest.md) — 手动验收流程
+- [API 参考](https://simplerjiang.github.io/baostock.NET/) — DocFX 生成的 API 文档
 
 ## License
 
