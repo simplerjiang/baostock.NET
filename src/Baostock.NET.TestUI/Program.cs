@@ -221,6 +221,10 @@ app.MapPost("/api/loadtest/run", async (LoadTestRequest? req, BaostockClient cli
 //   - 不支持的形式（含 "bytes=-N" suffix-length / 含逗号的 multi-range / 解析失败）→ 416 Range Not Satisfiable。
 //   - 206 响应必须带 Content-Range；若上游可读 Length 则 total = rangeStart + stream.Length，否则 total="*"。
 //   - 200 FULL 响应必须带 Accept-Ranges: bytes（声明支持 Range，便于客户端发起续传）。
+// v1.3.4 (Task-1)：416 路径必须给出 `bytes */<total>`（RFC 7233 §4.2 unsatisfied-range 要求 complete-length 是数字）。
+//   方案 A：始终先 GET 上游全量流拿 total（stream.Length 在 ResponseOwnedStream 里回落到 Content-Length 头），
+//   然后再做 Range 合法性判定 + 本地切片返回 206。代价是即使 partial 也下载全量；
+//   PDF ≤ 几 MB 可接受。同时新增越界检测（rangeStart >= total → 416 + total）。
 app.MapGet("/api/cninfo/pdf-download", async (HttpContext ctx, string? adjunctUrl, BaostockClient client, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(adjunctUrl))
@@ -291,85 +295,97 @@ app.MapGet("/api/cninfo/pdf-download", async (HttpContext ctx, string? adjunctUr
         }
     }
 
-    if (rangeInvalid)
-    {
-        // RFC 7233 §4.4：不可满足的 Range 应回 416；Content-Range: bytes */*（total 未知）。
-        ctx.Response.StatusCode = StatusCodes.Status416RangeNotSatisfiable;
-        ctx.Response.Headers["Content-Range"] = "bytes */*";
-        return Results.Empty;
-    }
-
+    Stream? stream = null;
     try
     {
-        var stream = await client.DownloadPdfAsync(adjunctUrl, rangeStart, ct).ConfigureAwait(false);
+        // v1.3.4 (Task-1)：始终拉全量上游流（rangeStart 传 null），让 416 路径也能拿到 total。
+        stream = await client.DownloadPdfAsync(adjunctUrl, rangeStart: null, ct).ConfigureAwait(false);
         var fileName = Path.GetFileName(adjunctUrl.TrimEnd('/'));
         if (string.IsNullOrWhiteSpace(fileName) || !fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
         {
             fileName = $"announcement-{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
         }
-        Console.WriteLine($"[cninfo] pdf-download {adjunctUrl} -> {fileName} (rangeStart={rangeStart?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "<none>"}, rangeEnd={rangeEnd?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "<none>"})");
+
+        // total 由 ResponseOwnedStream.Length 提供（先 _inner.Length，回落到 Content-Length 头）。
+        long? total = null;
+        try { total = stream.Length; } catch { /* unknown */ }
+
+        // 在拿到 total 之后做越界判定：rangeStart 必须 < total。
+        if (!rangeInvalid && rangeStart.HasValue && total.HasValue && rangeStart.Value >= total.Value)
+        {
+            rangeInvalid = true;
+        }
+
+        if (rangeInvalid)
+        {
+            // RFC 7233 §4.2：unsatisfied-range = "*/" complete-length（complete-length = 1*DIGIT）。
+            // total 未知时回落到 "0"（仍满足 ABNF），不写 "*/*"。
+            ctx.Response.StatusCode = StatusCodes.Status416RangeNotSatisfiable;
+            string token416 = total.HasValue
+                ? total.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : "0";
+            ctx.Response.Headers["Content-Range"] = $"bytes */{token416}";
+            await stream.DisposeAsync().ConfigureAwait(false);
+            stream = null;
+            return Results.Empty;
+        }
+
+        Console.WriteLine($"[cninfo] pdf-download {adjunctUrl} -> {fileName} (rangeStart={rangeStart?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "<none>"}, rangeEnd={rangeEnd?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "<none>"}, total={total?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "<unknown>"})");
 
         if (rangeStart.HasValue)
         {
-            // ── 206 Partial Content ──
-            // 上游已按 rangeStart 返回 partial 流（剩余字节）；
-            // 若客户端给了 end，则只 copy 前 (end-start+1) 字节。
+            // ── 206 Partial Content（本地切片）──
+            // 上游已返回全量流，先 skip startVal 字节再 copy bytesToWrite 字节。
             ctx.Response.StatusCode = StatusCodes.Status206PartialContent;
             ctx.Response.ContentType = "application/pdf";
             ctx.Response.Headers.AcceptRanges = "bytes";
             ctx.Response.Headers.ContentDisposition = $"attachment; filename=\"{fileName}\"";
 
-            // 计算 total（用于 Content-Range 末段）：start + 上游剩余字节数。
-            // HttpContent stream 在 Content-Length 已知时支持 .Length；否则抛 NotSupportedException → fallback "*"。
-            string totalToken = "*";
-            long? remainingLength = null;
-            try { remainingLength = stream.Length; } catch { /* unknown length */ }
-            if (remainingLength.HasValue)
-            {
-                totalToken = (rangeStart.Value + remainingLength.Value).ToString(System.Globalization.CultureInfo.InvariantCulture);
-            }
+            long startVal = rangeStart.Value;
+            string totalToken = total.HasValue
+                ? total.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : "*";
 
-            // 实际写出的结束字节（inclusive）：
-            //  - 客户端给了 end 且 end 不超过 total-1 → end
-            //  - 否则 → start + remaining - 1（写完所有剩余）
             long effectiveEnd;
             long bytesToWrite;
             if (rangeEnd.HasValue)
             {
-                bytesToWrite = rangeEnd.Value - rangeStart.Value + 1;
-                if (remainingLength.HasValue && bytesToWrite > remainingLength.Value)
+                effectiveEnd = rangeEnd.Value;
+                if (total.HasValue && effectiveEnd > total.Value - 1)
                 {
-                    bytesToWrite = remainingLength.Value;
+                    effectiveEnd = total.Value - 1;
                 }
-                effectiveEnd = rangeStart.Value + bytesToWrite - 1;
+                bytesToWrite = effectiveEnd - startVal + 1;
             }
-            else if (remainingLength.HasValue)
+            else if (total.HasValue)
             {
-                bytesToWrite = remainingLength.Value;
-                effectiveEnd = rangeStart.Value + bytesToWrite - 1;
+                effectiveEnd = total.Value - 1;
+                bytesToWrite = total.Value - startVal;
             }
             else
             {
-                bytesToWrite = -1; // copy all
-                effectiveEnd = -1; // unknown
+                effectiveEnd = -1;
+                bytesToWrite = -1;
             }
 
-            // 写 Content-Range 头：total 未知或 effectiveEnd 未知都用 *
             string endToken = effectiveEnd >= 0
                 ? effectiveEnd.ToString(System.Globalization.CultureInfo.InvariantCulture)
                 : "*";
-            string startToken = rangeStart.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            string startToken = startVal.ToString(System.Globalization.CultureInfo.InvariantCulture);
             ctx.Response.Headers["Content-Range"] = $"bytes {startToken}-{endToken}/{totalToken}";
 
-            await using (stream.ConfigureAwait(false))
+            var localStream = stream;
+            stream = null;
+            await using (localStream.ConfigureAwait(false))
             {
+                await SkipExactAsync(localStream, startVal, ct).ConfigureAwait(false);
                 if (bytesToWrite < 0)
                 {
-                    await stream.CopyToAsync(ctx.Response.Body, ct).ConfigureAwait(false);
+                    await localStream.CopyToAsync(ctx.Response.Body, ct).ConfigureAwait(false);
                 }
                 else
                 {
-                    await CopyExactAsync(stream, ctx.Response.Body, bytesToWrite, ct).ConfigureAwait(false);
+                    await CopyExactAsync(localStream, ctx.Response.Body, bytesToWrite, ct).ConfigureAwait(false);
                 }
             }
             return Results.Empty;
@@ -378,14 +394,18 @@ app.MapGet("/api/cninfo/pdf-download", async (HttpContext ctx, string? adjunctUr
         // ── 200 FULL ──
         // 显式声明支持 Range，使客户端可发起续传请求。
         ctx.Response.Headers.AcceptRanges = "bytes";
-        return Results.File(stream, "application/pdf", fileName);
+        var fullStream = stream;
+        stream = null;
+        return Results.File(fullStream, "application/pdf", fileName);
     }
     catch (OperationCanceledException)
     {
+        if (stream != null) { try { await stream.DisposeAsync().ConfigureAwait(false); } catch { /* best effort */ } }
         throw;
     }
     catch (Exception ex)
     {
+        if (stream != null) { try { await stream.DisposeAsync().ConfigureAwait(false); } catch { /* best effort */ } }
         Console.WriteLine($"[cninfo] pdf-download FAILED: {adjunctUrl}: {ex.GetType().Name}: {ex.Message}");
         return Results.Problem(detail: ex.Message, statusCode: 502, title: "cninfo pdf download failed");
     }
@@ -401,6 +421,21 @@ app.MapGet("/api/cninfo/pdf-download", async (HttpContext ctx, string? adjunctUr
             int read = await src.ReadAsync(buffer.AsMemory(0, toRead), token).ConfigureAwait(false);
             if (read == 0) break; // upstream EOF
             await dst.WriteAsync(buffer.AsMemory(0, read), token).ConfigureAwait(false);
+            remaining -= read;
+        }
+    }
+
+    // 局部函数：跳过指定字节数（无 Seek 支持时只能 read-discard）。
+    static async Task SkipExactAsync(Stream src, long byteCount, CancellationToken token)
+    {
+        if (byteCount <= 0) return;
+        var buffer = new byte[81920];
+        long remaining = byteCount;
+        while (remaining > 0)
+        {
+            int toRead = (int)Math.Min(buffer.Length, remaining);
+            int read = await src.ReadAsync(buffer.AsMemory(0, toRead), token).ConfigureAwait(false);
+            if (read == 0) break; // upstream EOF
             remaining -= read;
         }
     }

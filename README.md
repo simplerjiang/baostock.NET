@@ -7,7 +7,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://simplerjiang.github.io/baostock.NET/)
 
-> **🎉 v1.3.3 已发布**（2026-04-25，v1.3.2 契约缺陷热修）：3 个 internal endpoint meta `method` 修正为 GET / `/api/multi/*` 三端点补齐 `sources` 字段 / `/api/cninfo/pdf-download` Range 完整支持 RFC 7233（`bytes=A-B` + `Content-Range` + `Accept-Ranges`）。零 BREAKING，完全兼容 v1.3.2。
+> **🎉 v1.3.4 已发布**（2026-04-25，RFC 7233 完全合规 + Actions Node.js 24 升级）：416 响应 `Content-Range: bytes */<total>` 完全合规 §4.2 / GitHub Actions 升级（checkout v6 / setup-dotnet v5 / upload-artifact v7 / pages v5）应对 2026-06-02 Node.js 20 弃用 / `.gitignore` 补 `tmp_*` + 清理 17 文件。零 BREAKING，完全兼容 v1.3.3。
+>
+> **v1.3.3 已发布**（2026-04-25，v1.3.2 契约缺陷热修）：3 个 internal endpoint meta `method` 修正为 GET / `/api/multi/*` 三端点补齐 `sources` 字段 / `/api/cninfo/pdf-download` Range 完整支持 RFC 7233（`bytes=A-B` + `Content-Range` + `Accept-Ranges`）。零 BREAKING，完全兼容 v1.3.2。
 >
 > **v1.3.2 已发布**（2026-04-25，API 可观测性优化）：HTTP 多源端点响应顶层暴露 `sources` 字段（Bug-N-02） / TestUI PDF 下载支持 `Range: bytes=N-` 续传透传（Bug-N-04） / `/api/meta/endpoints` 元数据增加 `method` 字段（Bug-N-05）。零 BREAKING，完全兼容 v1.3.1。
 >

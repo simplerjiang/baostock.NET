@@ -60,3 +60,16 @@ _site/
 # Source probe raw responses (capture snapshots, large/noisy)
 tools/source-probes/raw/
 tools/source-probes/__pycache__/
+
+# Local debug / probe scripts (Dev / Test agent ad-hoc scratch)
+tmp_*
+tmp_*.ps1
+tmp_*.json
+tmp_*.log
+tmp_*.png
+tmp_*.pdf
+tmp_*.md
+
+# Test agent / dev agent ad-hoc artifacts
+test_output.log
+*.local.log

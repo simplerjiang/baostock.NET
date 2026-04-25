@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.3.4 — 2026-04-25
+
+### 修复 + 维护
+
+- **416 响应 `Content-Range` 完全合规 RFC 7233 §4.2**(v1.3.3 已知瑕疵)
+  - v1.3.3 中 416 响应 `Content-Range: bytes */*` 不符合规范；§4.2 要求 `unsatisfied-range = "*/" complete-length`
+  - 修复：416 路径先拉上游全量流拿 total 字节数，再以 `bytes */<total>` 返回(即使 Range 无效也付出一次上游往返代价，确保规范合规)
+  - 副效益：起始越界(如 `bytes=999999-`)现在能正确返 416 + total，v1.3.3 会盲目 200 透传
+  - 副效益：end 越界(如 `bytes=0-999999`)现在按规范截断到 `total-1`
+
+- **GitHub Actions 升级到 Node.js 24(应对 GitHub 2026-06-02 弃用)**
+  - `actions/checkout` v4 → v6
+  - `actions/setup-dotnet` v4 → v5
+  - `actions/upload-artifact` v4 → v7
+  - `actions/upload-pages-artifact` v3 → v5
+  - `actions/deploy-pages` v4 → v5
+  - 三个 workflow(ci.yml / docs.yml / release.yml)全部更新
+
+- **`.gitignore` 增补 + 工作区清理**
+  - 追加 `tmp_*` 等本地调试 artifact 规则
+  - 清理 17 个未跟踪 tmp 文件
+
+### 内部
+
+- TestUI `pdf-download` 端点新增私有 `SkipExactAsync` 函数：因 `CninfoSource.ResponseOwnedStream` 不支持 Seek，206 切片通过 read-discard 跳过 startVal 字节再读取目标长度
+- 416 响应路径补 stream dispose，避免 HttpResponseMessage 泄漏
+
+### Breaking Changes
+
+**无**。
+
+### 测试
+
+- 307 passed / 0 failed / 1 skipped(与 v1.3.3 基线一致)
+- 0 warning / 0 error
+- Test Agent 独立全量回归 PASS(8/8 Range 矩阵 + 5/5 端点回归)
+
 ## v1.3.3 — 2026-04-25
 
 ### 修复（v1.3.2 契约缺陷热修）
