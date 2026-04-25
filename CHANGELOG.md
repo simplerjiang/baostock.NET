@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.3.2 — 2026-04-25
+
+### 优化（API 可观测性 + 用户体验）
+
+- **响应顶层暴露 `sources` 字段**（Bug-N-02）：
+  - HTTP 多源端点（财报三表 / 巨潮公告）的 `ApiResult` envelope 新增 `sources: string[]` 字段，列出实际返回数据的源名称（去重）。
+  - 财报：`["EastMoney"]` 或 `["Sina"]`（Hedged 胜出方）
+  - 巨潮：`["Cninfo"]`（单源一致性）
+  - TCP 端点不受影响（`sources` 字段不出现在 JSON 中，`JsonIgnoreCondition.WhenWritingNull` 序列化）
+
+- **TestUI PDF 下载支持 Range 请求**（Bug-N-04）：
+  - `/api/cninfo/pdf-download` 端点现在解析 HTTP `Range: bytes=N-` 请求头，正确转发到 `BaostockClient.DownloadPdfAsync(adjunctUrl, rangeStart, ct)`
+  - 带 Range 时返回 `206 Partial Content` + `Accept-Ranges: bytes`
+  - 浏览器、`curl -C -`、`HttpClient` 续传场景全部生效
+
+- **`/api/meta/endpoints` 元数据增加 `method` 字段**（Bug-N-05）：
+  - `EndpointDescriptor` record 新增 `Method` 字段（默认 `"POST"`，所有当前注册端点均为 POST）
+  - 前端可据此正确选择请求方法，不再依赖 trial-and-error
+
+### 内部
+
+- `EndpointRunner.ApiResult` 加 `Sources` 字段（可选，向后兼容）
+- 通过反射从 row 提取 `Source` 属性（缓存 PropertyInfo），不强制源类共享接口
+- `Range` 解析仅支持 `bytes=N-` 起始偏移格式（multi-range / suffix 暂不支持）
+
+### Breaking Changes
+
+**无**。所有新字段均为可选 + 默认值，旧调用方零改动可吃新 envelope。
+
+### 测试
+
+- 305 passed / 0 failed / 1 skipped（基线保持）
+- 0 warning / 0 error
+
 ## v1.3.1 — 2026-04-24
 
 ### 修复

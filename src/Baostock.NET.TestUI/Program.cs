@@ -94,7 +94,7 @@ foreach (var ep in routedEndpoints)
             }
         }
 
-        return await EndpointRunner.RunAsync(() => captured.Handler(body, client, ct)).ConfigureAwait(false);
+        return await EndpointRunner.RunAsync(() => captured.Handler(body, client, ct), captured.SourcesExtractor).ConfigureAwait(false);
     });
 }
 
@@ -215,21 +215,64 @@ app.MapPost("/api/loadtest/run", async (LoadTestRequest? req, BaostockClient cli
 // v1.3.0 Sprint 3：流式下载巨潮公告 PDF。
 // GET 便于浏览器直接 <a href> 触发下载；不走 EndpointRegistry（那是 POST + ApiResult 模式）。
 // BaostockClient 复用 DI 单例，避免重复建 HttpClient。
-app.MapGet("/api/cninfo/pdf-download", async (string? adjunctUrl, BaostockClient client, CancellationToken ct) =>
+// v1.3.2 (Bug-N-04)：透传客户端 Range 头到上游 CninfoSource，使浏览器/curl 可断点续传。
+//   - 仅解析 "bytes=N-" 起始偏移（最常见的续传形式）；不支持 multi-range / suffix-length，足够覆盖典型续传场景。
+//   - 简化方案：返回 206 + partial body，但不重建 Content-Range/Content-Length 头
+//     （上游 HttpResponseMessage 在 ResponseOwnedStream 内被吞掉，原始 header 不易透出）。
+//     curl -C - / 普通浏览器 resume 依赖 206 状态码即可工作；严格 RFC 7233 兼容性留待后续。
+app.MapGet("/api/cninfo/pdf-download", async (HttpContext ctx, string? adjunctUrl, BaostockClient client, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(adjunctUrl))
     {
         return Results.BadRequest(new { ok = false, error = "adjunctUrl is required" });
     }
+
+    long? rangeStart = null;
+    if (ctx.Request.Headers.TryGetValue("Range", out var rangeHeader))
+    {
+        var spec = rangeHeader.ToString().Trim();
+        if (spec.StartsWith("bytes=", StringComparison.OrdinalIgnoreCase))
+        {
+            spec = spec["bytes=".Length..];
+            // 仅取首个 range 段；忽略后续逗号分隔（multi-range 不支持）。
+            var commaIdx = spec.IndexOf(',');
+            if (commaIdx >= 0) spec = spec[..commaIdx];
+            var dashIdx = spec.IndexOf('-');
+            if (dashIdx > 0
+                && long.TryParse(spec[..dashIdx].Trim(), System.Globalization.NumberStyles.Integer,
+                    System.Globalization.CultureInfo.InvariantCulture, out var start)
+                && start >= 0)
+            {
+                rangeStart = start;
+            }
+        }
+    }
+
     try
     {
-        var stream = await client.DownloadPdfAsync(adjunctUrl, rangeStart: null, ct).ConfigureAwait(false);
+        var stream = await client.DownloadPdfAsync(adjunctUrl, rangeStart, ct).ConfigureAwait(false);
         var fileName = Path.GetFileName(adjunctUrl.TrimEnd('/'));
         if (string.IsNullOrWhiteSpace(fileName) || !fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
         {
             fileName = $"announcement-{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
         }
-        Console.WriteLine($"[cninfo] pdf-download {adjunctUrl} -> {fileName}");
+        Console.WriteLine($"[cninfo] pdf-download {adjunctUrl} -> {fileName} (rangeStart={rangeStart?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "<none>"})");
+
+        if (rangeStart.HasValue)
+        {
+            // 手写 206 响应：Results.File 总是 200 + 自动 enableRangeProcessing，
+            // 但这里上游已按 Range 头要了 partial 流，再走 enableRangeProcessing 会二次裁剪导致空 body。
+            ctx.Response.StatusCode = StatusCodes.Status206PartialContent;
+            ctx.Response.ContentType = "application/pdf";
+            ctx.Response.Headers.AcceptRanges = "bytes";
+            ctx.Response.Headers.ContentDisposition = $"attachment; filename=\"{fileName}\"";
+            await using (stream.ConfigureAwait(false))
+            {
+                await stream.CopyToAsync(ctx.Response.Body, ct).ConfigureAwait(false);
+            }
+            return Results.Empty;
+        }
+
         return Results.File(stream, "application/pdf", fileName);
     }
     catch (OperationCanceledException)

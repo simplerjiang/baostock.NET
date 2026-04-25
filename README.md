@@ -7,7 +7,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://simplerjiang.github.io/baostock.NET/)
 
-> **🎉 v1.3.1 已发布**（2026-04-24，银行字段修复 + 手册补齐）：银行/券商利润表 `TotalOperateIncome` 从 `OperateIncome` 自动兜底（Finding B-ICBC）/ 手册模块 I 补 I6/I7/I8 创业板/科创板/北交所硬性用例。零 BREAKING，完全兼容 v1.3.0。
+> **🎉 v1.3.2 已发布**（2026-04-25，API 可观测性优化）：HTTP 多源端点响应顶层暴露 `sources` 字段（Bug-N-02） / TestUI PDF 下载支持 `Range: bytes=N-` 续传透传（Bug-N-04） / `/api/meta/endpoints` 元数据增加 `method` 字段（Bug-N-05）。零 BREAKING，完全兼容 v1.3.1。
+>
+> **v1.3.1 已发布**（2026-04-24，银行字段修复 + 手册补齐）：银行/券商利润表 `TotalOperateIncome` 从 `OperateIncome` 自动兜底（Finding B-ICBC）/ 手册模块 I 补 I6/I7/I8 创业板/科创板/北交所硬性用例。零 BREAKING，完全兼容 v1.3.0。
 >
 > **v1.3.0 发布**（2026-04-24，HTTP 多源扩展）：财报三表东财 + 新浪双源对冲 / 巨潮公告检索 + PDF 下载（Range 断点续传） / TestUI 新增 5 个端点。零 BREAKING，向后兼容 v1.2.0。
 > 详见 [v1.3.0 专集](docs/v1.3.0/README.md)。

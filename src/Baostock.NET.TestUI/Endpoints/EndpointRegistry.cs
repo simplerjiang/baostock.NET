@@ -11,9 +11,15 @@ namespace Baostock.NET.TestUI.Endpoints;
 /// 一个可路由的 endpoint：metadata + 实际 handler。
 /// handler 入参是请求 body（JsonElement）+ client + ct，返回 (rowCount, data)。
 /// </summary>
+/// <param name="SourcesExtractor">
+/// 可选：HTTP 多源对冲端点提供的"从 data 抽取实际响应源名称"的回调。
+/// 由 <see cref="EndpointRunner"/> 在成功路径调用，结果写入 <see cref="ApiResult.Sources"/>。
+/// 单源（TCP / cninfo）端点可硬编码常量列表；多源（财报）端点可用反射读 row.Source。
+/// </param>
 public sealed record RoutedEndpoint(
     EndpointDescriptor Meta,
-    Func<JsonElement, BaostockClient, CancellationToken, Task<(int rowCount, object? data)>> Handler);
+    Func<JsonElement, BaostockClient, CancellationToken, Task<(int rowCount, object? data)>> Handler,
+    Func<object?, IReadOnlyList<string>?>? SourcesExtractor = null);
 
 /// <summary>
 /// 集中维护全部 baostock TCP API（28 个）+ 多源 API（3 个）的元数据与 handler。
@@ -624,7 +630,11 @@ public static class EndpointRegistry
                 Console.WriteLine($"[financial] {name} code={code} dateType={dateType} kind={kind} companyType={companyType?.ToString() ?? "auto"} dates={(dates is null ? "<auto>" : string.Join(",", dates))}");
                 var rows = await invoke(c, req, ct).ConfigureAwait(false);
                 return (rows.Count, (object?)rows);
-            });
+            },
+            // N-02：把 hedge 实际赢源透到 envelope 的 sources 字段。
+            // FullBalanceSheetRow / FullIncomeStatementRow / FullCashFlowRow 都有 string Source 属性，
+            // 反射式提取避免引入额外接口约束（也兼容未来加新源的 row 类型）。
+            SourcesExtractor: EndpointRunner.ExtractSourcesFromRows);
     }
 
     private static IReadOnlyList<DateOnly>? ParseReportDates(string[] raw)
@@ -675,8 +685,12 @@ public static class EndpointRegistry
                 Console.WriteLine($"[cninfo] announcements code={code} category={category} start={start} end={end} page={pageNum}/{pageSize}");
                 var rows = await c.QueryAnnouncementsAsync(req, ct).ConfigureAwait(false);
                 return (rows.Count, (object?)rows);
-            });
+            },
+            // 单源端点也填一个常量 sources，让前端 envelope 字段在两类 HTTP 端点之间保持一致。
+            SourcesExtractor: static _ => CninfoSources);
     }
+
+    private static readonly IReadOnlyList<string> CninfoSources = new[] { "Cninfo" };
 
     private static DateOnly? ParseDateOnly(string? s)
     {
