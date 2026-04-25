@@ -11,7 +11,9 @@ v1.3.4 是维护版本，无功能新增，无 Breaking Changes。修复 v1.3.3 
 ## 文档
 
 - **[端点状态快照](endpoint-snapshot.md)** — 41 个 TestUI 端点的全量实测报告（参数 / 响应 / 性能 / 注意事项）
-- **[数据正确性交叉验证报告](data-correctness-cross-validation.md)** — 16 个端点与东方财富 / 巨潮 / 央行 / 统计局等权威源对比（12 MATCH + 4 DEVIATION 已记录口径差异 + 0 MISMATCH）
+- **[数据正确性交叉验证 第一轮](data-correctness-cross-validation.md)** — 16 个端点（实时/K线/财报/公告/宏观/索引成份/估值/特殊名单/日历/分红/复权/退市/业绩预告等）
+- **[数据正确性交叉验证 第二轮](data-correctness-cross-validation-round2.md)** — 19 个端点（批量行情/现金流/5min K/全市场名单/个股资料/行业/SZ50/ZZ500/营运/成长/杜邦/资产负债指标/现金流指标/业绩快报/存款利率/准备金率/年度货币供应/暂停股/*ST）
+- **累计**：32/32 业务端点 100% 覆盖，24 MATCH + 3 内部一致性 + 7 DEVIATION（口径差异已文档化）+ 0 MISMATCH
 - [CHANGELOG v1.3.4 段](../../CHANGELOG.md) — 修复明细
 
 ## 升级

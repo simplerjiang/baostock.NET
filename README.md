@@ -269,7 +269,7 @@ dotnet test --filter "Category=Live"           # 联网集成测试
 
 详见 **[v1.3.4 端点状态快照](docs/v1.3.4/endpoint-snapshot.md)**：每个端点的请求示例、参数说明、响应字段、性能指标、注意事项。
 
-**数据可信度**：v1.3.4 已完成 16 个端点与东方财富 / 巨潮 / 央行 / 统计局等权威源的[交叉验证](docs/v1.3.4/data-correctness-cross-validation.md)，12 MATCH + 4 DEVIATION（均为口径差异，已文档化） + 0 MISMATCH。
+**数据可信度**：v1.3.4 已完成 32/32 业务端点 100% 与外部权威源（东方财富 / 巨潮 / 中证指数 / 央行 / 国家统计局 / 上交所 / 深交所）交叉验证，[第一轮 16 个](docs/v1.3.4/data-correctness-cross-validation.md) + [第二轮 19 个](docs/v1.3.4/data-correctness-cross-validation-round2.md) = **24 MATCH + 3 内部一致性 + 7 DEVIATION（口径差异已文档化）+ 0 MISMATCH**。
 
 ## 文档索引
 

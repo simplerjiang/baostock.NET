@@ -315,6 +315,26 @@ baostock TCP 长连接非线程安全，loadtest 层强制：
 
 `/api/financial/*` 三表的 `reportTitle` 取值：`"2024年年报"` / `"2024年中报"` / `"2024年三季报"` / `"2024年一季报"`。
 
+### `financial/cashflow.netcashOperate` 字段命名（v1.3.4 round2 发现）
+
+⚠️ **重要**：`/api/financial/cashflow` 响应顶层的 `netcashOperate` 字段并不是“经营活动产生的现金流量净额”，而是“**现金及现金等价物净增加额**”——也就是经营 + 投资 + 筹资三类活动的合计净流量。
+
+如果需要“经营活动产生的现金流量净额”（即 CFO，常用财务分析指标），应从响应的 `rawFields` 中读取 `MANANETR` 字段。
+
+例：贵州茅台 2024 年报：
+- `netcashOperate = 515.43 亿`（现金净增加额，含投资+筹资）
+- `rawFields.MANANETR = 269.10 亿`（真正的经营活动现金流净额）
+
+**该命名不一致已记录，规划在 v1.4.0 修正字段映射（届时会引入 BREAKING CHANGE，提供迁移说明）**。当前版本请在使用 `netcashOperate` 时按“现金及现金等价物净增加额”理解，分析经营性现金流时使用 `rawFields.MANANETR`。
+
+### `metadata/all-stock` 北交所覆盖
+
+⚠️ baostock 上游 `query_all_stock` 接口**不返回北交所（BJ*）证券**。如需北交所列表，建议用 `metadata/stock-basic` 单查或外部数据源补齐。
+
+### `macro/required-reserve-ratio` 数据时效
+
+⚠️ baostock 上游存款准备金率数据**截至 2018-06-24**，2019 年起的多次降准未收录。如需最新准备金率，建议直接查央行公告。
+
 ---
 
 ## 已知限制与注意事项
