@@ -246,8 +246,32 @@ dotnet test                                    # 离线单测
 dotnet test --filter "Category=Live"           # 联网集成测试
 ```
 
+## v1.3.4 端点状态快照
+
+41 个 TestUI 端点全量实测（基于 commit `2e2afb4`）：
+
+- **HTTP 200 通过**：41 / 41
+- **业务数据正常**：39（PASS）+ 2（空集合规：当日无暂停股 / logout）
+- **业务/技术失败**：0
+- **单元测试**：307 passed / 0 failed / 1 skipped
+- **编译**：0 warning / 0 error
+
+### 关键 API 协议（开发者必读）
+
+1. **响应信封**：绝大多数 POST 端点返回 `{ok, rowCount, elapsedMs, sources?, data}`；3 个 GET 元数据端点（`session/status`、`meta/endpoints`、`loadtest/list-targets`）直接返回原始对象/数组，不带信封。
+2. **`sources` 字段**（v1.3.2+）：仅多源对冲端点（`multi/*`、`financial/*`、`cninfo/*`）返回，标记本次胜出的源（`Sina` / `Tencent` / `EastMoney` / `Cninfo`）。baostock TCP 端点 `sources=null`。
+3. **登录要求**：baostock TCP 端点（`/api/baostock/*`）必须先调 `POST /api/session/login` 登录；多源 HTTP 端点和压测/元数据端点不需要 baostock 登录。
+4. **`/api/loadtest/run`**：用 `durationSeconds` (1..300)，**不是 `requestCount`**；baostock TCP 路径硬锁 `concurrency ≤ 1 / durationSeconds ≤ 30 / total ≤ 200`。
+5. **`/api/cninfo/pdf-download`**：支持 RFC 7233 完整 Range 请求（`bytes=A-` 与 `bytes=A-B`），无效格式（后缀 `bytes=-N`、多段、起始越界）返 416 + `Content-Range: bytes */total`。
+6. **`evaluation/dividend-data`**：`yearType` 必填（`"report"` 或 `"operate"`）；`evaluation/adjust-factor` 用 `dateRange`，不用 `year/quarter`。
+
+### 完整端点清单
+
+详见 **[v1.3.4 端点状态快照](docs/v1.3.4/endpoint-snapshot.md)**：每个端点的请求示例、参数说明、响应字段、性能指标、注意事项。
+
 ## 文档索引
 
+- [v1.3.4 专集](docs/v1.3.4/README.md) — 41 端点状态快照 + 开发者协议指南
 - [v1.3.0 专集](docs/v1.3.0/README.md) — 财报三表 / 巨潮 PDF / TestUI 新端点 / 从 v1.2.0 迁移
 - [v1.2.0 专集](docs/v1.2.0/README.md) — 架构 / 数据源 / 迁移指南 / TestUI 使用
 - [入门指南](docs/getting-started.md) — 安装、Session、IAsyncEnumerable、错误处理
