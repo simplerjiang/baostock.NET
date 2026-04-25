@@ -163,6 +163,20 @@ public sealed class EastMoneyCashFlowSource : IFinancialStatementSource
             var raw = EastMoneyCompanyTypeResolver.FlattenRawFields(item);
             var reportDate = EastMoneyCompanyTypeResolver.SafeParseDate(raw.GetValueOrDefault("REPORT_DATE")) ?? default;
 
+            // EM 真实接口字段语义（v1.4.0 实测确认）：
+            //   NETCASH_OPERATE  = 经营活动现金流量净额 (CFO)
+            //   NETCASH_INVEST   = 投资活动现金流量净额 (CFI)
+            //   NETCASH_FINANCE  = 筹资活动现金流量净额 (CFF)
+            // EM 没有直接的"现金及现金等价物净增加额"字段（254 个字段实测无 MANANETR），
+            // 因此 NetCashIncrease 由 CFO + CFI + CFF 派生（三者同时存在时）。
+            var cfo = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("NETCASH_OPERATE"));
+            var cfi = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("NETCASH_INVEST"));
+            var cff = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("NETCASH_FINANCE"));
+            decimal? netCashIncrease = (cfo.HasValue && cfi.HasValue && cff.HasValue)
+                ? cfo.Value + cfi.Value + cff.Value
+                : (decimal?)null;
+
+#pragma warning disable CS0618 // NetcashOperate 标记 Obsolete，仍需为旧字段填值以保持兼容
             var row = new FullCashFlowRow
             {
                 Code = normalizedCode,
@@ -171,18 +185,21 @@ public sealed class EastMoneyCashFlowSource : IFinancialStatementSource
                 SalesServices = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("SALES_SERVICES")),
                 TotalOperateInflow = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("TOTAL_OPERATE_INFLOW")),
                 TotalOperateOutflow = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("TOTAL_OPERATE_OUTFLOW")),
-                NetcashOperate = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("NETCASH_OPERATE")),
+                NetcashOperate = cfo,            // v1.4.0 起：CFO（与 v1.3.x EM 路径同值，无 BREAKING）
+                NetCashIncrease = netCashIncrease, // 由 CFO+CFI+CFF 派生
+                OperatingCashFlow = cfo,         // 真正的经营活动现金流量净额
                 TotalInvestInflow = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("TOTAL_INVEST_INFLOW")),
                 TotalInvestOutflow = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("TOTAL_INVEST_OUTFLOW")),
-                NetcashInvest = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("NETCASH_INVEST")),
+                NetcashInvest = cfi,
                 TotalFinanceInflow = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("TOTAL_FINANCE_INFLOW")),
                 TotalFinanceOutflow = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("TOTAL_FINANCE_OUTFLOW")),
-                NetcashFinance = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("NETCASH_FINANCE")),
+                NetcashFinance = cff,
                 BeginCce = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("BEGIN_CCE")),
                 EndCce = EastMoneyCompanyTypeResolver.SafeParseDecimal(raw.GetValueOrDefault("END_CCE")),
                 RawFields = raw,
                 Source = "EastMoney",
             };
+#pragma warning restore CS0618
             rows.Add(row);
         }
 

@@ -183,7 +183,12 @@ public sealed class SinaCashFlowSource : IFinancialStatementSource
                 raw["rCurrency"] = cur.GetString();
             }
 
-            decimal? salesServices = null, totalOperateInflow = null, totalOperateOutflow = null, netcashOperate = null;
+            decimal? salesServices = null, totalOperateInflow = null, totalOperateOutflow = null;
+            // v1.4.0 起：MANANETR/NETCFOPER（经营活动现金流量净额, CFO）与
+            // CASHNETR（现金及现金等价物净增加额）必须分开变量保存。v1.3.x 用 ??=
+            // 把两者混入同一变量是 bug。
+            decimal? mananetr = null;       // CFO：MANANETR 优先，备选 NETCFOPER
+            decimal? cashIncrease = null;   // 现金净增加额：CASHNETR
             decimal? totalInvestInflow = null, totalInvestOutflow = null, netcashInvest = null;
             decimal? totalFinanceInflow = null, totalFinanceOutflow = null, netcashFinance = null;
             decimal? beginCce = null, endCce = null;
@@ -232,8 +237,12 @@ public sealed class SinaCashFlowSource : IFinancialStatementSource
                         case "TOTALCASHOUTF":
                             totalOperateOutflow ??= value; break;
                         case "CASHNETR":
+                            cashIncrease ??= value; break;
+                        case "MANANETR":
+                            // MANANETR 优先级最高（直接覆盖 NETCFOPER 的备选值）
+                            mananetr = value ?? mananetr; break;
                         case "NETCFOPER":
-                            netcashOperate ??= value; break;
+                            mananetr ??= value; break;
                         case "INFLINVE":
                         case "SUBTOTINVE":
                             totalInvestInflow ??= value; break;
@@ -263,6 +272,13 @@ public sealed class SinaCashFlowSource : IFinancialStatementSource
                 }
             }
 
+            // 若接口未直接返回 CASHNETR，但三大类活动净额齐全，可派生现金净增加额。
+            if (!cashIncrease.HasValue && mananetr.HasValue && netcashInvest.HasValue && netcashFinance.HasValue)
+            {
+                cashIncrease = mananetr.Value + netcashInvest.Value + netcashFinance.Value;
+            }
+
+#pragma warning disable CS0618 // NetcashOperate 标记 Obsolete，仍需为旧字段填值以保持兼容
             rows.Add(new FullCashFlowRow
             {
                 Code = normalizedCode,
@@ -271,7 +287,12 @@ public sealed class SinaCashFlowSource : IFinancialStatementSource
                 SalesServices = salesServices,
                 TotalOperateInflow = totalOperateInflow,
                 TotalOperateOutflow = totalOperateOutflow,
-                NetcashOperate = netcashOperate,
+                // v1.4.0 起 NetcashOperate 与 OperatingCashFlow 同值（统一为 CFO）。
+                // 注意：v1.3.x Sina 路径 NetcashOperate 取的是 CASHNETR（净增加额），
+                // 这是 BREAKING 修正——v1.3.x 的 Sina 行为本身错配了字段语义。
+                NetcashOperate = mananetr,
+                NetCashIncrease = cashIncrease,
+                OperatingCashFlow = mananetr,
                 TotalInvestInflow = totalInvestInflow,
                 TotalInvestOutflow = totalInvestOutflow,
                 NetcashInvest = netcashInvest,
@@ -283,6 +304,7 @@ public sealed class SinaCashFlowSource : IFinancialStatementSource
                 RawFields = raw,
                 Source = "Sina",
             });
+#pragma warning restore CS0618
         }
 
         return rows;
