@@ -112,21 +112,26 @@ public static class EndpointRegistry
                 "登出当前会话",
                 Array.Empty<FieldDescriptor>(),
                 Protocol: "internal"),
+            // v1.3.3 (Bug-1)：以下三个端点在 Program.cs 用 MapGet 挂载，meta 必须如实声明 Method=GET，
+            // 否则 /api/meta/endpoints 会谎报为 POST 导致按 meta 调用时收到 405。
             new EndpointDescriptor("session", "Status",
                 "/api/session/status",
                 "查询会话状态：含 isLoggedIn / isSocketConnected（v1.2.0-preview5 起）",
                 Array.Empty<FieldDescriptor>(),
-                Protocol: "internal"),
+                Protocol: "internal",
+                Method: "GET"),
             new EndpointDescriptor("meta", "Endpoints",
                 "/api/meta/endpoints",
                 "列出全部 endpoint 元数据（驱动前端表单自动渲染）",
                 Array.Empty<FieldDescriptor>(),
-                Protocol: "internal"),
+                Protocol: "internal",
+                Method: "GET"),
             new EndpointDescriptor("loadtest", "ListTargets",
                 "/api/loadtest/list-targets",
                 "列出可压测的 endpoint（自动排除 internal/loadtest/meta）",
                 Array.Empty<FieldDescriptor>(),
-                Protocol: "internal"),
+                Protocol: "internal",
+                Method: "GET"),
             new EndpointDescriptor("loadtest", "Run",
                 "/api/loadtest/run",
                 "运行进程内压测（concurrency / mode=duration|count / warmup）",
@@ -518,7 +523,12 @@ public static class EndpointRegistry
                 var quote = await c.GetRealtimeQuoteAsync(
                     EndpointRunner.GetString(body, "code") ?? "SH600519", ct).ConfigureAwait(false);
                 return (1, (object?)quote);
-            });
+            },
+            // v1.3.3 (Bug-2)：单个 RealtimeQuote 不是 IEnumerable，ExtractSourcesFromRows 会返回 null，
+            // 这里手写提取以保证 sources 字段不为空。
+            SourcesExtractor: data => data is RealtimeQuote q && !string.IsNullOrEmpty(q.Source)
+                ? new[] { q.Source }
+                : null);
 
         yield return new RoutedEndpoint(
             new EndpointDescriptor("multi", "GetRealtimeQuotesAsync",
@@ -540,7 +550,9 @@ public static class EndpointRegistry
                 }
                 var quotes = await c.GetRealtimeQuotesAsync(codes, ct).ConfigureAwait(false);
                 return (quotes.Count, (object?)quotes);
-            });
+            },
+            // v1.3.3 (Bug-2)：RealtimeQuote.Source 反射抽取。
+            SourcesExtractor: EndpointRunner.ExtractSourcesFromRows);
 
         yield return new RoutedEndpoint(
             new EndpointDescriptor("multi", "GetHistoryKLineAsync",
@@ -564,7 +576,9 @@ public static class EndpointRegistry
                 var end = ParseDate(EndpointRunner.GetString(body, "endDate"), DateTime.Today);
                 var rows = await c.GetHistoryKLineAsync(code, frequency, start, end, adjust, ct).ConfigureAwait(false);
                 return (rows.Count, (object?)rows);
-            });
+            },
+            // v1.3.3 (Bug-2)：EastMoneyKLineRow.Source 反射抽取。
+            SourcesExtractor: EndpointRunner.ExtractSourcesFromRows);
     }
 
     private static DateTime ParseDate(string? s, DateTime fallback)

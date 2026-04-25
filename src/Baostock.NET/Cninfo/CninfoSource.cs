@@ -395,7 +395,22 @@ public sealed class CninfoSource : ICninfoSource
         public override bool CanRead => _inner.CanRead;
         public override bool CanSeek => false;
         public override bool CanWrite => false;
-        public override long Length => _inner.Length;
+        // v1.3.3 (Bug-3)：HttpContent.ReadAsStreamAsync 返回的 stream 通常不支持 .Length，
+        // 但响应头里有 Content-Length（即使是 206，也是 partial 长度）。
+        // TestUI 的 pdf-download 需要这个长度来计算 Content-Range 末段，否则只能用 "*"。
+        public override long Length
+        {
+            get
+            {
+                try { return _inner.Length; }
+                catch (NotSupportedException)
+                {
+                    var cl = _response.Content.Headers.ContentLength;
+                    if (cl.HasValue) return cl.Value;
+                    throw;
+                }
+            }
+        }
         public override long Position
         {
             get => _inner.Position;

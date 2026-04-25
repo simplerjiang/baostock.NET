@@ -215,11 +215,12 @@ app.MapPost("/api/loadtest/run", async (LoadTestRequest? req, BaostockClient cli
 // v1.3.0 Sprint 3：流式下载巨潮公告 PDF。
 // GET 便于浏览器直接 <a href> 触发下载；不走 EndpointRegistry（那是 POST + ApiResult 模式）。
 // BaostockClient 复用 DI 单例，避免重复建 HttpClient。
-// v1.3.2 (Bug-N-04)：透传客户端 Range 头到上游 CninfoSource，使浏览器/curl 可断点续传。
-//   - 仅解析 "bytes=N-" 起始偏移（最常见的续传形式）；不支持 multi-range / suffix-length，足够覆盖典型续传场景。
-//   - 简化方案：返回 206 + partial body，但不重建 Content-Range/Content-Length 头
-//     （上游 HttpResponseMessage 在 ResponseOwnedStream 内被吞掉，原始 header 不易透出）。
-//     curl -C - / 普通浏览器 resume 依赖 206 状态码即可工作；严格 RFC 7233 兼容性留待后续。
+// v1.3.2 (Bug-N-04)：透传客户端 Range 头到上游 CninfoSource。
+// v1.3.3 (Bug-3)：补齐 RFC 7233 关键合规项：
+//   - 解析 "bytes=A-" 与 "bytes=A-B" 两种形式。
+//   - 不支持的形式（含 "bytes=-N" suffix-length / 含逗号的 multi-range / 解析失败）→ 416 Range Not Satisfiable。
+//   - 206 响应必须带 Content-Range；若上游可读 Length 则 total = rangeStart + stream.Length，否则 total="*"。
+//   - 200 FULL 响应必须带 Accept-Ranges: bytes（声明支持 Range，便于客户端发起续传）。
 app.MapGet("/api/cninfo/pdf-download", async (HttpContext ctx, string? adjunctUrl, BaostockClient client, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(adjunctUrl))
@@ -227,25 +228,75 @@ app.MapGet("/api/cninfo/pdf-download", async (HttpContext ctx, string? adjunctUr
         return Results.BadRequest(new { ok = false, error = "adjunctUrl is required" });
     }
 
-    long? rangeStart = null;
+    // ── 解析 Range 头 ────────────────────────────────
+    long? rangeStart = null;   // 客户端请求的起始字节
+    long? rangeEnd = null;     // 客户端请求的结束字节（inclusive）；null = 直到末尾
+    bool rangeInvalid = false;
     if (ctx.Request.Headers.TryGetValue("Range", out var rangeHeader))
     {
         var spec = rangeHeader.ToString().Trim();
-        if (spec.StartsWith("bytes=", StringComparison.OrdinalIgnoreCase))
+        if (!spec.StartsWith("bytes=", StringComparison.OrdinalIgnoreCase))
         {
-            spec = spec["bytes=".Length..];
-            // 仅取首个 range 段；忽略后续逗号分隔（multi-range 不支持）。
-            var commaIdx = spec.IndexOf(',');
-            if (commaIdx >= 0) spec = spec[..commaIdx];
-            var dashIdx = spec.IndexOf('-');
-            if (dashIdx > 0
-                && long.TryParse(spec[..dashIdx].Trim(), System.Globalization.NumberStyles.Integer,
-                    System.Globalization.CultureInfo.InvariantCulture, out var start)
-                && start >= 0)
+            rangeInvalid = true;
+        }
+        else
+        {
+            spec = spec["bytes=".Length..].Trim();
+            // multi-range（含逗号）不支持
+            if (spec.Contains(','))
             {
-                rangeStart = start;
+                rangeInvalid = true;
+            }
+            else
+            {
+                var dashIdx = spec.IndexOf('-');
+                if (dashIdx < 0)
+                {
+                    rangeInvalid = true;
+                }
+                else
+                {
+                    var leftRaw = spec[..dashIdx].Trim();
+                    var rightRaw = spec[(dashIdx + 1)..].Trim();
+                    // suffix-length "bytes=-N" → 不支持（左侧为空）
+                    if (leftRaw.Length == 0)
+                    {
+                        rangeInvalid = true;
+                    }
+                    else if (!long.TryParse(leftRaw, System.Globalization.NumberStyles.Integer,
+                                 System.Globalization.CultureInfo.InvariantCulture, out var startVal)
+                             || startVal < 0)
+                    {
+                        rangeInvalid = true;
+                    }
+                    else
+                    {
+                        rangeStart = startVal;
+                        if (rightRaw.Length > 0)
+                        {
+                            if (!long.TryParse(rightRaw, System.Globalization.NumberStyles.Integer,
+                                    System.Globalization.CultureInfo.InvariantCulture, out var endVal)
+                                || endVal < startVal)
+                            {
+                                rangeInvalid = true;
+                            }
+                            else
+                            {
+                                rangeEnd = endVal;
+                            }
+                        }
+                    }
+                }
             }
         }
+    }
+
+    if (rangeInvalid)
+    {
+        // RFC 7233 §4.4：不可满足的 Range 应回 416；Content-Range: bytes */*（total 未知）。
+        ctx.Response.StatusCode = StatusCodes.Status416RangeNotSatisfiable;
+        ctx.Response.Headers["Content-Range"] = "bytes */*";
+        return Results.Empty;
     }
 
     try
@@ -256,23 +307,77 @@ app.MapGet("/api/cninfo/pdf-download", async (HttpContext ctx, string? adjunctUr
         {
             fileName = $"announcement-{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
         }
-        Console.WriteLine($"[cninfo] pdf-download {adjunctUrl} -> {fileName} (rangeStart={rangeStart?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "<none>"})");
+        Console.WriteLine($"[cninfo] pdf-download {adjunctUrl} -> {fileName} (rangeStart={rangeStart?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "<none>"}, rangeEnd={rangeEnd?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "<none>"})");
 
         if (rangeStart.HasValue)
         {
-            // 手写 206 响应：Results.File 总是 200 + 自动 enableRangeProcessing，
-            // 但这里上游已按 Range 头要了 partial 流，再走 enableRangeProcessing 会二次裁剪导致空 body。
+            // ── 206 Partial Content ──
+            // 上游已按 rangeStart 返回 partial 流（剩余字节）；
+            // 若客户端给了 end，则只 copy 前 (end-start+1) 字节。
             ctx.Response.StatusCode = StatusCodes.Status206PartialContent;
             ctx.Response.ContentType = "application/pdf";
             ctx.Response.Headers.AcceptRanges = "bytes";
             ctx.Response.Headers.ContentDisposition = $"attachment; filename=\"{fileName}\"";
+
+            // 计算 total（用于 Content-Range 末段）：start + 上游剩余字节数。
+            // HttpContent stream 在 Content-Length 已知时支持 .Length；否则抛 NotSupportedException → fallback "*"。
+            string totalToken = "*";
+            long? remainingLength = null;
+            try { remainingLength = stream.Length; } catch { /* unknown length */ }
+            if (remainingLength.HasValue)
+            {
+                totalToken = (rangeStart.Value + remainingLength.Value).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            // 实际写出的结束字节（inclusive）：
+            //  - 客户端给了 end 且 end 不超过 total-1 → end
+            //  - 否则 → start + remaining - 1（写完所有剩余）
+            long effectiveEnd;
+            long bytesToWrite;
+            if (rangeEnd.HasValue)
+            {
+                bytesToWrite = rangeEnd.Value - rangeStart.Value + 1;
+                if (remainingLength.HasValue && bytesToWrite > remainingLength.Value)
+                {
+                    bytesToWrite = remainingLength.Value;
+                }
+                effectiveEnd = rangeStart.Value + bytesToWrite - 1;
+            }
+            else if (remainingLength.HasValue)
+            {
+                bytesToWrite = remainingLength.Value;
+                effectiveEnd = rangeStart.Value + bytesToWrite - 1;
+            }
+            else
+            {
+                bytesToWrite = -1; // copy all
+                effectiveEnd = -1; // unknown
+            }
+
+            // 写 Content-Range 头：total 未知或 effectiveEnd 未知都用 *
+            string endToken = effectiveEnd >= 0
+                ? effectiveEnd.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : "*";
+            string startToken = rangeStart.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            ctx.Response.Headers["Content-Range"] = $"bytes {startToken}-{endToken}/{totalToken}";
+
             await using (stream.ConfigureAwait(false))
             {
-                await stream.CopyToAsync(ctx.Response.Body, ct).ConfigureAwait(false);
+                if (bytesToWrite < 0)
+                {
+                    await stream.CopyToAsync(ctx.Response.Body, ct).ConfigureAwait(false);
+                }
+                else
+                {
+                    await CopyExactAsync(stream, ctx.Response.Body, bytesToWrite, ct).ConfigureAwait(false);
+                }
             }
             return Results.Empty;
         }
 
+        // ── 200 FULL ──
+        // 显式声明支持 Range，使客户端可发起续传请求。
+        ctx.Response.Headers.AcceptRanges = "bytes";
         return Results.File(stream, "application/pdf", fileName);
     }
     catch (OperationCanceledException)
@@ -283,6 +388,21 @@ app.MapGet("/api/cninfo/pdf-download", async (HttpContext ctx, string? adjunctUr
     {
         Console.WriteLine($"[cninfo] pdf-download FAILED: {adjunctUrl}: {ex.GetType().Name}: {ex.Message}");
         return Results.Problem(detail: ex.Message, statusCode: 502, title: "cninfo pdf download failed");
+    }
+
+    // 局部函数：拷贝指定字节数。
+    static async Task CopyExactAsync(Stream src, Stream dst, long byteCount, CancellationToken token)
+    {
+        var buffer = new byte[81920];
+        long remaining = byteCount;
+        while (remaining > 0)
+        {
+            int toRead = (int)Math.Min(buffer.Length, remaining);
+            int read = await src.ReadAsync(buffer.AsMemory(0, toRead), token).ConfigureAwait(false);
+            if (read == 0) break; // upstream EOF
+            await dst.WriteAsync(buffer.AsMemory(0, read), token).ConfigureAwait(false);
+            remaining -= read;
+        }
     }
 });
 

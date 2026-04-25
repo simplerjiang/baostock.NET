@@ -274,3 +274,89 @@ UR 验收完后请用此结构产出报告（建议直接以 `docs/UR-Acceptance
 | M3 | 前端无 protocol 徽章 / 警告 banner / TCP concurrency 锁 | ✅ Sprint 2.5 批 3 已修 |
 | N1 | metadata 默认日期硬编码 2024-xx-xx，跨年/跨季后陈旧 | ✅ Sprint 2.5 批 3 已修（每次 GET /api/meta/endpoints 重算） |
 | N2..N7 | 其它低优体验问题 | 列入 v1.2.1 |
+
+---
+
+## v1.3.3 修复回归（必跑）
+
+> 修复 v1.3.2 三项契约缺陷：(1) 3 个 internal endpoint meta 谎报 POST；(2) `multi/*` 三端点 `sources` 字段全空；(3) `pdf-download` Range 不合规。
+
+### V3-1 · meta 自洽（method=GET）
+
+```powershell
+$meta = (Invoke-WebRequest -UseBasicParsing -Uri http://localhost:5050/api/meta/endpoints).Content | ConvertFrom-Json
+$meta | Where-Object { $_.path -in '/api/session/status','/api/meta/endpoints','/api/loadtest/list-targets' } | Select-Object path, method
+```
+
+期望：3 行全部 `method = GET`。任何一行为 POST → blocker。
+
+### V3-2 · multi/* sources 字段非空
+
+```powershell
+$body = '{"code":"SH600519"}'
+(Invoke-WebRequest -UseBasicParsing -Method POST -ContentType 'application/json' -Body $body `
+    -Uri http://localhost:5050/api/multi/realtime-quote).Content | ConvertFrom-Json | Select-Object ok, sources
+
+$body2 = '{"codes":"SH600519,SZ000001"}'
+(Invoke-WebRequest -UseBasicParsing -Method POST -ContentType 'application/json' -Body $body2 `
+    -Uri http://localhost:5050/api/multi/realtime-quotes).Content | ConvertFrom-Json | Select-Object ok, sources
+
+$body3 = '{"code":"SH600519","startDate":"2024-12-01","endDate":"2024-12-31"}'
+(Invoke-WebRequest -UseBasicParsing -Method POST -ContentType 'application/json' -Body $body3 `
+    -Uri http://localhost:5050/api/multi/history-k-line).Content | ConvertFrom-Json | Select-Object ok, sources
+```
+
+期望：三次响应 `sources` 都不为空数组（至少 1 个源名，如 `Sina` / `Tencent` / `EastMoney`）。任一为空 → blocker。
+
+### V3-3 · pdf-download Range RFC 7233 合规
+
+> 任选一份真实 cninfo PDF（参考 Part I 拿 adjunctUrl）。
+
+```powershell
+$adjunct = 'finalpage/2024-12-28/1222168020.PDF'   # 替换为真实存在的
+$url = "http://localhost:5050/api/cninfo/pdf-download?adjunctUrl=$adjunct"
+
+# (a) 完整下载，拿 total + Accept-Ranges
+$full = Invoke-WebRequest -UseBasicParsing -Uri $url
+$total = $full.Content.Length
+"FULL: status=$($full.StatusCode), bytes=$total, Accept-Ranges=$($full.Headers['Accept-Ranges'])"
+# 期望：200 + Accept-Ranges = bytes
+
+# (b) bytes=0-999 → 206 + 1000 字节 + Content-Range: bytes 0-999/$total
+$r1 = Invoke-WebRequest -UseBasicParsing -Uri $url -Headers @{ Range = 'bytes=0-999' }
+"0-999: status=$($r1.StatusCode), bytes=$($r1.Content.Length), Content-Range=$($r1.Headers['Content-Range'])"
+
+# (c) bytes=100-199 → 206 + 100 字节 + Content-Range: bytes 100-199/$total
+$r2 = Invoke-WebRequest -UseBasicParsing -Uri $url -Headers @{ Range = 'bytes=100-199' }
+"100-199: status=$($r2.StatusCode), bytes=$($r2.Content.Length), Content-Range=$($r2.Headers['Content-Range'])"
+
+# (d) bytes=1000- → 206 + (total-1000) 字节 + Content-Range: bytes 1000-(total-1)/$total
+$r3 = Invoke-WebRequest -UseBasicParsing -Uri $url -Headers @{ Range = 'bytes=1000-' }
+"1000-: status=$($r3.StatusCode), bytes=$($r3.Content.Length), Content-Range=$($r3.Headers['Content-Range'])"
+
+# (e) bytes=-100 → 416 Range Not Satisfiable
+try {
+    $r4 = Invoke-WebRequest -UseBasicParsing -Uri $url -Headers @{ Range = 'bytes=-100' }
+    "-100: status=$($r4.StatusCode) (期望 416 但成功了 → blocker)"
+} catch {
+    "-100: 期望异常 → $($_.Exception.Response.StatusCode)"
+}
+
+# (f) bytes=0-999,2000-2999 (multi-range) → 416
+try {
+    $r5 = Invoke-WebRequest -UseBasicParsing -Uri $url -Headers @{ Range = 'bytes=0-999,2000-2999' }
+    "multi: status=$($r5.StatusCode) (期望 416 但成功了 → blocker)"
+} catch {
+    "multi: 期望异常 → $($_.Exception.Response.StatusCode)"
+}
+```
+
+期望逐项：
+- (a) 200，`Accept-Ranges: bytes`
+- (b) 206，body=1000 字节，`Content-Range: bytes 0-999/<total 或 *>`
+- (c) 206，body=100 字节，`Content-Range: bytes 100-199/<total 或 *>`
+- (d) 206，body=`total-1000` 字节，`Content-Range: bytes 1000-<total-1>/<total 或 *>`
+- (e) 416
+- (f) 416
+
+任一不符 → blocker。

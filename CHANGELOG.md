@@ -2,6 +2,52 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.3.3 — 2026-04-25
+
+### 修复（v1.3.2 契约缺陷热修）
+
+经 Test Agent 全量遍历发现 v1.3.2 三项 Minor feature 均存在契约缺陷，本版本一并修复。
+
+- **Bug-1（HIGH）：`/api/meta/endpoints` 元数据中 3 个内部端点 method 字段错误**
+  - 受影响端点：`/api/session/status`、`/api/meta/endpoints`、`/api/loadtest/list-targets`
+  - v1.3.2 中 meta 声明 `method=POST`，但实际仅接受 GET，按 meta 调用返回 405
+  - 修复：保留为 GET（符合 REST 语义），更正 `EndpointDescriptor.Method` 为 `"GET"`
+
+- **Bug-2（HIGH）：`/api/multi/*` 三个对冲端点 envelope 缺失 `sources` 字段**
+  - 受影响端点：`/api/multi/realtime-quote`、`/api/multi/realtime-quotes`、`/api/multi/history-k-line`
+  - v1.3.2 中 `EndpointRegistry.BuildMulti` 三处 `RoutedEndpoint` 未传 `SourcesExtractor`
+  - 修复：补齐 `SourcesExtractor`，三个端点 envelope 现正确返回 `sources: ["Sina"]` / `["EastMoney"]` / `["Tencent"]`
+
+- **Bug-3（MEDIUM）：`/api/cninfo/pdf-download` Range 处理不合 RFC 7233**
+  - v1.3.2 仅支持 `bytes=N-`（前缀偏移），`bytes=A-B`（端范围）被忽略，`bytes=-N`（后缀）行为未定义
+  - 206 响应缺失 `Content-Range` 头；200 FULL 响应缺失 `Accept-Ranges: bytes` 头
+  - 修复：
+    - 完整支持 `bytes=A-` 与 `bytes=A-B` 两种格式
+    - 不支持的格式（`bytes=-N` 后缀 / multi-range / 解析失败）→ `416 Range Not Satisfiable`
+    - 206 响应必带 `Content-Range: bytes A-B/total`
+    - 200 FULL 响应必带 `Accept-Ranges: bytes`
+  - 6 案例矩阵实测全部符合规范
+
+### 内部
+
+- `Baostock.NET.Cninfo.CninfoSource.ResponseOwnedStream.Length` 在底层 stream 不支持 Length 时回落读取 HTTP `Content-Length` 响应头，确保 `Content-Range` 能给出确切 total
+- 新增单测 `CninfoSourceRangeTests`（2 cases）：rangeStart=null 全量 + rangeStart=N 跳过偏移
+- `README.UserAgentTest.md` 增加 v1.3.3 验收段 V3-1（meta 自洽）/V3-2（multi sources）/V3-3（PDF Range 6 案例）
+
+### 已知瑕疵（非阻断，留 v1.3.4）
+
+- 416 响应的 `Content-Range` 当前为 `bytes */*`，RFC 7233 §4.2 要求 `bytes */<complete-length>`
+
+### Breaking Changes
+
+**无**。
+
+### 测试
+
+- 307 passed / 0 failed / 1 skipped（v1.3.2 基线 305 + 新增 2 个 Range 单测）
+- 0 warning / 0 error
+- Test Agent 独立全量回归 PASS（不依赖 Dev 自验）
+
 ## v1.3.2 — 2026-04-25
 
 ### 优化（API 可观测性 + 用户体验）
