@@ -11,6 +11,7 @@ v1.3.4 是维护版本，无功能新增，无 Breaking Changes。修复 v1.3.3 
 ## 文档
 
 - **[端点状态快照](endpoint-snapshot.md)** — 41 个 TestUI 端点的全量实测报告（参数 / 响应 / 性能 / 注意事项）
+- **[数据正确性交叉验证报告](data-correctness-cross-validation.md)** — 16 个端点与东方财富 / 巨潮 / 央行 / 统计局等权威源对比（12 MATCH + 4 DEVIATION 已记录口径差异 + 0 MISMATCH）
 - [CHANGELOG v1.3.4 段](../../CHANGELOG.md) — 修复明细
 
 ## 升级

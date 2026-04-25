@@ -285,6 +285,38 @@ baostock TCP 长连接非线程安全，loadtest 层强制：
 
 ---
 
+## 字段语义注意事项（v1.3.4 交叉验证发现）
+
+经 16 个端点与外部权威源（东方财富 / 巨潮 / 中证指数 / PBOC / 国家统计局）交叉验证，以下字段在使用时需理解口径差异：
+
+### 复权基准日
+
+`/api/multi/history-k-line` 与 `/api/baostock/history/k-data-plus` 的 `PreAdjust`（前复权）数据，复权基准日是当前最近一次除权日，**与外部网页（东方财富、同花顺）的前复权数据可能存在 ~1% 价差**——因为各方复权基准日不一致。计算交易策略时建议固定一个复权口径，不要混用多源前复权数据。
+
+### `netProfit` 净利润口径
+
+`/api/financial/income-statement` 返回的 `netProfit` 是**合并报表净利润**（含少数股东损益）；外部公开报道常用的是**归属母公司净利润**（不含少数股东）。两者差额 = 少数股东损益。例如茅台 2024 年报：合并净利润 ≈ 281.5 亿元，归母净利润 ≈ 272.4 亿元，差额 9.1 亿元为少数股东应享。
+
+### `dividOperateDate` 含义
+
+`/api/baostock/evaluation/adjust-factor` 与 `/api/baostock/evaluation/dividend-data` 中的 `dividOperateDate` 是**股权登记日**（record date），不是“除权除息日”（ex-dividend date）。两者通常相差 1 个交易日。
+
+### `loan-rate` 数据时效
+
+`/api/baostock/macro/loan-rate` 截至 **2015-10-24**——这是中国人民银行最后一次公布“贷款基准利率”，2019 年后改为 LPR（贷款市场报价利率）。如需 LPR 数据，本接口暂不提供。
+
+### `evaluation/dividend-data` 的 `yearType` 取值
+
+- `"report"`：按报告期归集（2023 年报对应方案）
+- `"operate"`：按经营周期归集（如跨年分红）
+- 大部分 A 股公司用 `"report"` 即可
+
+### 报告期 `reportTitle` 示例
+
+`/api/financial/*` 三表的 `reportTitle` 取值：`"2024年年报"` / `"2024年中报"` / `"2024年三季报"` / `"2024年一季报"`。
+
+---
+
 ## 已知限制与注意事项
 
 1. **baostock TCP 长连接非线程安全**：单 `BaostockClient` 实例不能并发查询；多线程使用需要外部互斥或多客户端实例。
