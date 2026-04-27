@@ -1,0 +1,164 @@
+################ SECTION A: Cninfo all_stock.json detailed ################
+STATUS: 200 LEN: 4371990
+Total stockList count: 42428
+Categories observed:
+
+Count Name                    
+----- ----                    
+17068 å°æ¹æ¿åºåº         
+ 5991 è¡ä»½æ¥ä»·            
+ 5528 Aè¡                    
+ 5005 èµäº§æ¯æè¯å¸      
+ 2747 æ¸¯è¡                  
+ 1959 ç§ååº               
+ 1595 å¬å¸åº               
+  821 å½åº                  
+  669 ETF                     
+  319 LOF                     
+  286 ä»£åè½¬è®©            
+  116 æ¿åºæ¯ææºæåºå¸
+   96 å¯äº¤æ¢ç§ååº      
+   79 Bè¡                    
+   40 å¼æ¾å¼åºé         
+   29 ä¼ä¸åº               
+   27 å°é­å¼åºé         
+   27 ä¸å¨äº§åºé         
+   24 æ¿ç­æ§éèåº      
+    1 éååºå¸            
+    1 CDR                     
+
+
+
+OrgId prefix distribution (first 4 chars):
+
+Count Name
+----- ----
+16738 9900
+ 7494 GD05
+ 5960 gfbj
+ 3206 fzqy
+ 2244 qsgn
+ 1446 gssh
+ 1070 gssz
+  969 jjjl
+  959 gshk
+  733 GD12
+  253 nssc
+  246 GD17
+  165 GD10
+  138 GD06
+  133 GD15
+  104 GD00
+   95 GD01
+   49 GD11
+   42 GD07
+   40 GD14
+
+
+
+Code prefix distribution (first 1 char):
+
+Count Name
+----- ----
+22938 1   
+ 5642 8   
+ 4858 5   
+ 4244 0   
+ 2318 6   
+ 1399 3   
+  637 4   
+  354 9   
+   38 2   
+
+
+
+Code prefix distribution (first 2 chars):
+
+Count Name
+----- ----
+ 9144 19  
+ 5168 10  
+ 3366 56  
+ 3004 13  
+ 2930 83  
+ 2711 87  
+ 2460 14  
+ 2264 00  
+ 1935 11  
+ 1708 60  
+ 1399 30  
+  787 52  
+  736 01  
+  705 50  
+  694 15  
+  610 68  
+  488 02  
+  390 16  
+  351 43  
+  313 92  
+  310 08  
+  264 40  
+  175 06  
+  160 03  
+  116 12  
+  103 09  
+   41 90  
+   38 20  
+   27 18  
+   22 42  
+    6 04  
+    2 07  
+    1 80  
+
+
+
+----- BJ-style codes (4xxxxx or 8xxxxx) sample 10 -----
+BJ-like count: 6277
+  430005  åå­é«ç§  cat=è¡ä»½æ¥ä»·  orgId=9900000403
+  430009  åç¯çµå­  cat=è¡ä»½æ¥ä»·  orgId=9900001542
+  430010  STåè£  cat=è¡ä»½æ¥ä»·  orgId=9900001701
+  430014  æä¸ä¸çºª  cat=è¡ä»½æ¥ä»·  orgId=9900003221
+  430019  æ°æ¾ä½³å  cat=è¡ä»½æ¥ä»·  orgId=9900003721
+  430020  å»ºå·¥åå  cat=è¡ä»½æ¥ä»·  orgId=9900003722
+  430021  æµ·é«ç§é  cat=è¡ä»½æ¥ä»·  orgId=9900003741
+  430022  æ±é½äºå²³  cat=è¡ä»½æ¥ä»·  orgId=9900003801
+  430025  ç³æ¶åçµ  cat=è¡ä»½æ¥ä»·  orgId=9900004183
+  430027  åç§åå¤§  cat=è¡ä»½æ¥ä»·  orgId=9900004321
+----- known BJ stock 832000 lookup -----
+NOT FOUND in all_stock.json
+----- known BJ stock 430017 lookup -----
+NOT FOUND in all_stock.json
+----- known BJ stock 836263 lookup (SAFEMINE) -----
+NOT FOUND in all_stock.json
+
+################ SECTION B: EastMoney push2 with browser UA ################
+===== fs=m:0+t:81 =====
+  ERR: 远程服务器返回错误: (502) 错误的网关。
+===== fs=m:0+t:82 =====
+  ERR: 远程服务器返回错误: (502) 错误的网关。
+===== fs=m:0+t:83 =====
+  ERR: 远程服务器返回错误: (502) 错误的网关。
+===== fs=b:BSE =====
+  ERR: 远程服务器返回错误: (502) 错误的网关。
+===== fs=b:BJ =====
+  ERR: 远程服务器返回错误: (502) 错误的网关。
+===== fs=m:0+t:81+s:262144 =====
+  ERR: 远程服务器返回错误: (502) 错误的网关。
+
+################ SECTION C: EastMoney datacenter-web with sortColumns ################
+TRY: https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_BJSE_LIST&pageNumber=1&pageSize=10&sortColumns=SECURITY_CODE&sortTypes=1&columns=ALL
+  success=False message=报表配置不存在,RPT_BJSE_LIST rows=0
+TRY: https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_NEEQ_LIST&pageNumber=1&pageSize=10&sortColumns=SECURITY_CODE&sortTypes=1&columns=ALL
+  success=False message=报表配置不存在,RPT_NEEQ_LIST rows=0
+TRY: https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_F10_BASIC_ORGINFO&pageNumber=1&pageSize=10&sortColumns=SECURITY_CODE&sortTypes=1&columns=ALL&filter=(MARKET="鍖楄瘉")
+  success=False message=MARKET列不存在 rows=0
+
+################ SECTION D: BSE official  ################
+TRY: https://www.bse.com.cn/nq/listedcompany.html
+  ERR: 操作超时。
+TRY: https://www.bse.com.cn/nqxxController/nqxxCnzq.do?callback=jQuery&page=0&type=&xxfcbj=&xxzqdm=&sortfield=xxzqdm&sorttype=asc
+  ERR: 操作超时。
+TRY: https://www.bse.com.cn/api/companyManage/listedCompany
+  ERR: 操作超时。
+
+################ DONE ################

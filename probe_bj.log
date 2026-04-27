@@ -1,0 +1,64 @@
+################ SECTION 1: EastMoney push2 clist ################
+===== fs=m:0+t:81 =====
+  ERR: 远程服务器返回错误: (502) 错误的网关。
+===== fs=m:0+t:82 =====
+  ERR: 远程服务器返回错误: (502) 错误的网关。
+===== fs=m:0+t:83 =====
+  ERR: 远程服务器返回错误: (502) 错误的网关。
+===== fs=b:BSE =====
+  ERR: 远程服务器返回错误: (502) 错误的网关。
+===== fs=b:BJ =====
+  ERR: 远程服务器返回错误: (502) 错误的网关。
+
+===== EM stock/get secid=116.832000 (verify BJ secid prefix) =====
+{
+    "rc":  100,
+    "rt":  1,
+    "svr":  177617599,
+    "lt":  1,
+    "full":  1,
+    "dlmkts":  "",
+    "data":  null
+}
+
+################ SECTION 2: EastMoney datacenter-web ################
+TRY: https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_BJSE_LIST&pageNumber=1&pageSize=10
+  success=False message=返回字段参数不能为空 rows=0
+TRY: https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_BJ_STOCK_LIST&pageNumber=1&pageSize=10
+  success=False message=返回字段参数不能为空 rows=0
+TRY: https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_NEEQ_LIST&pageNumber=1&pageSize=10
+  success=False message=返回字段参数不能为空 rows=0
+
+################ SECTION 3: Cninfo static JSON ################
+TRY: http://www.cninfo.com.cn/new/data/szse_stock.json
+  STATUS: 200 LEN: 585423
+  SNIPPET: {"stockList":[{"code":"000001","pinyin":"payh","category":"Aè??","orgId":"gssz0000001","zwjc":"?13???é??è??"},{"code":"000002","pinyin":"wka","category":"Aè??","orgId":"gssz0000002","zwjc":"????§?A"},{"code":"000004","pinyin":"stgh","category":"Aè??","orgId":"gssz0000004","zwjc":"*ST??????"},{"code":"000006","pinyin":"szya","category":"Aè??","orgId":"gssz0000006","zwjc":"?·±??ˉ???A"},{"code":"0000
+TRY: http://www.cninfo.com.cn/new/data/sse_stock.json
+  ERR: 远程服务器返回错误: (404) 未找到。
+TRY: http://www.cninfo.com.cn/new/data/bse_stock.json
+  ERR: 远程服务器返回错误: (404) 未找到。
+TRY: http://www.cninfo.com.cn/new/data/all_stock.json
+  STATUS: 200 LEN: 4371990
+  SNIPPET: {"stockList":[{"code":"000001","pinyin":"payh","category":"Aè??","orgId":"gssz0000001","zwjc":"?13???é??è??"},{"code":"000002","pinyin":"wka","category":"Aè??","orgId":"gssz0000002","zwjc":"????§?A"},{"code":"000004","pinyin":"stgh","category":"Aè??","orgId":"gssz0000004","zwjc":"*ST??????"},{"code":"000006","pinyin":"szya","category":"Aè??","orgId":"gssz0000006","zwjc":"?·±??ˉ???A"},{"code":"0000
+TRY: http://www.cninfo.com.cn/new/data/bsestock.json
+  ERR: 远程服务器返回错误: (404) 未找到。
+TRY: http://www.cninfo.com.cn/new/data/listed_company.json
+  ERR: 远程服务器返回错误: (404) 未找到。
+
+################ SECTION 4: Cninfo search ################
+----- 4.1 topSearch/query empty keyWord -----
+rows: 0
+----- 4.2 marketStat/listedStockTotal -----
+  ERR: 远程服务器返回错误: (404) 未找到。
+
+################ SECTION 5: BSE official ################
+TRY: https://www.bse.com.cn/nq/listedcompany.html
+  ERR: 操作超时。
+TRY: https://www.bse.com.cn/api/company/list
+  ERR: 操作超时。
+TRY: https://www.bse.com.cn/companyManage/listedCompany.html
+  ERR: 操作超时。
+TRY: http://www.bse.com.cn/companyMarketData/marketData.do?type=01
+  ERR: 操作超时。
+
+################ DONE ################

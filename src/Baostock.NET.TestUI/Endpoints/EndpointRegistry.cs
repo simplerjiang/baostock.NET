@@ -683,7 +683,7 @@ public static class EndpointRegistry
                         Description: "yyyy-MM-dd；留空则不限"),
                     new FieldDescriptor("endDate", "string", false, Today(),
                         Description: "yyyy-MM-dd；留空则不限"),
-                    new FieldDescriptor("pageNum", "int", false, "1"),
+                    new FieldDescriptor("page", "int", false, "1"),
                     new FieldDescriptor("pageSize", "int", false, "30"),
                 },
                 Protocol: "http"),
@@ -693,7 +693,8 @@ public static class EndpointRegistry
                 var category = EndpointRunner.GetEnum(body, "category", CninfoAnnouncementCategory.All);
                 var start = ParseDateOnly(EndpointRunner.GetString(body, "startDate"));
                 var end = ParseDateOnly(EndpointRunner.GetString(body, "endDate"));
-                var pageNum = EndpointRunner.GetInt(body, "pageNum", 1);
+                // 同时接受 "page" 和 "pageNum"，优先 "page"（更通用）。
+                var pageNum = EndpointRunner.GetInt(body, "page", EndpointRunner.GetInt(body, "pageNum", 1));
                 var pageSize = EndpointRunner.GetInt(body, "pageSize", 30);
                 var req = new CninfoAnnouncementRequest(code, category, start, end, pageNum, pageSize);
                 Console.WriteLine($"[cninfo] announcements code={code} category={category} start={start} end={end} page={pageNum}/{pageSize}");

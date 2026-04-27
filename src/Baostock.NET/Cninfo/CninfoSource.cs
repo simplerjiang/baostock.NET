@@ -164,9 +164,15 @@ public sealed class CninfoSource : ICninfoSource
     {
         var pageNum = request.PageNum <= 0 ? 1 : request.PageNum;
         var pageSize = request.PageSize <= 0 ? 30 : request.PageSize;
-        var seDate = (request.StartDate.HasValue || request.EndDate.HasValue)
-            ? $"{FormatDate(request.StartDate)}~{FormatDate(request.EndDate)}"
-            : string.Empty;
+        // 巨潮 seDate 要求"起止日期都填"或"都不填"；单侧留空会导致 API 返回 0 条。
+        // 缺 endDate 时补今天，缺 startDate 时补 2000-01-01。
+        var seDate = string.Empty;
+        if (request.StartDate.HasValue || request.EndDate.HasValue)
+        {
+            var start = request.StartDate ?? new DateOnly(2000, 1, 1);
+            var end = request.EndDate ?? DateOnly.FromDateTime(DateTime.Today);
+            seDate = $"{FormatDate(start)}~{FormatDate(end)}";
+        }
         return new Dictionary<string, string>
         {
             ["stock"] = sc.Code6 + "," + orgId,

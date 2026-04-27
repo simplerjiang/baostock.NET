@@ -1,0 +1,88 @@
+################ SECTION E: Cninfo all_stock.json deep dive ################
+Total: 42428
+
+----- Sample by category=新三板 (first 10) -----
+----- Sample by category=股份报价 (first 10) -----
+
+----- Sample by orgId-prefix=gfbj (first 10) -----
+  001202  ç¬ç³è¡ä»½  orgId=gfbj0839749  cat=Aè¡
+  001205  çèªè¡ä»½  orgId=gfbj0832659  cat=Aè¡
+  001206  ä¾ä¾è¡ä»½  orgId=gfbj0870245  cat=Aè¡
+  001219  éå²é£å  orgId=gfbj0872387  cat=Aè¡
+  001235  éå¾çµç§  orgId=gfbj0834474  cat=Aè¡
+  001259  å©ä»ç§æ  orgId=gfbj0838907  cat=Aè¡
+  001269  æ¬§æ¶ç§æ  orgId=gfbj0836724  cat=Aè¡
+  001277  éè¾¾è¡ä»½  orgId=gfbj0833293  cat=Aè¡
+  001278  ä¸å½¬ç§æ  orgId=gfbj0871976  cat=Aè¡
+  001285  çç«ç§å¯  orgId=gfbj0833321  cat=Aè¡
+gfbj total count: 5960
+
+----- 92xxxx codes (likely BJ new) -----
+92xxxx count: 313
+  920000  å®å¾½å¤å°  orgId=gfbj0832000  cat=Aè¡
+  920001  çº¬è¾¾åçµ  orgId=9900037542  cat=Aè¡
+  920002  ä¸è¾¾è½´æ¿  orgId=gfbj0873843  cat=Aè¡
+  920003  ä¸­è¯å¨è¯¢  orgId=gfbj0839962  cat=Aè¡
+  920005  é¼ä½³ç²¾å¯  orgId=9900057482  cat=Aè¡
+  920006  ææ¥ ç§æ  orgId=gfbj0837006  cat=Aè¡
+  920007  éç«æºè½  orgId=gfbj0874325  cat=Aè¡
+  920008  æçµåä¿¡  orgId=gfbj0831490  cat=Aè¡
+  920009  ä¸¹å¨çç©  orgId=nssc1000841  cat=Aè¡
+  920010  å¯æ·»çæ°  orgId=gfbj0831010  cat=Aè¡
+
+----- 83xxxx codes -----
+83xxxx count: 2930
+  830768  èéç§æ  orgId=gfbj0830768  cat=è¡ä»½æ¥ä»·
+  830769  åè´¢è¡ä»½  orgId=gfbj0830769  cat=è¡ä»½æ¥ä»·
+  830770  çåè¡ä»½  orgId=gfbj0830770  cat=è¡ä»½æ¥ä»·
+  830771  åç¿çµè®¯  orgId=gfbj0830771  cat=è¡ä»½æ¥ä»·
+  830772  è¿èªç§æ  orgId=gfbj0830772  cat=è¡ä»½æ¥ä»·
+
+----- 87xxxx codes -----
+87xxxx count: 2710
+  870000  é¾å­ç§æ  orgId=gfbj0870000  cat=è¡ä»½æ¥ä»·
+  870001  æ¥ææ¶å°  orgId=gfbj0870001  cat=è¡ä»½æ¥ä»·
+  870003  é¦æµ·é£å  orgId=gfbj0870003  cat=è¡ä»½æ¥ä»·
+  870005  ä¸­å³ç§æ  orgId=gfbj0870005  cat=è¡ä»½æ¥ä»·
+  870009  å®æ·è¡ä»½  orgId=gfbj0870009  cat=è¡ä»½æ¥ä»·
+
+----- 88xxxx codes -----
+88xxxx count: 0
+
+----- 43xxxx codes (NEEQ legacy or BJ?) -----
+43xxxx count: 351
+  430005  åå­é«ç§  orgId=9900000403  cat=è¡ä»½æ¥ä»·
+  430009  åç¯çµå­  orgId=9900001542  cat=è¡ä»½æ¥ä»·
+  430010  STåè£  orgId=9900001701  cat=è¡ä»½æ¥ä»·
+  430014  æä¸ä¸çºª  orgId=9900003221  cat=è¡ä»½æ¥ä»·
+  430019  æ°æ¾ä½³å  orgId=9900003721  cat=è¡ä»½æ¥ä»·
+
+----- Lookup BJ stocks via known orgIds -----
+  832000 -> NOT FOUND
+  430017 -> NOT FOUND
+  836263 -> NOT FOUND
+  920002 -> ä¸è¾¾è½´æ¿  orgId=gfbj0873843  cat=Aè¡
+  873169 -> NOT FOUND
+  836419 -> NOT FOUND
+  835185 -> NOT FOUND
+  430510 -> NOT FOUND
+
+################ SECTION F: BSE official ################
+TRY: https://www.bse.com.cn/nqxxController/nqxxCnzq.do?callback=jQuery&page=0&type=&xxfcbj=&xxzqdm=&sortfield=xxzqdm&sorttype=asc
+  ERR: The operation has timed out.
+TRY: http://www.bse.com.cn/nqxxController/nqxxCnzq.do?callback=jQuery&page=0&type=&xxfcbj=&xxzqdm=&sortfield=xxzqdm&sorttype=asc
+  ERR: The operation has timed out.
+TRY: https://www.bse.com.cn/companyManager/companyList.do
+  ERR: The operation has timed out.
+
+################ SECTION G: AKShare-style EM endpoints ################
+TRY: https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10&po=1&np=1&fs=m:0+t:81+s:2048&fields=f12,f14,f3,f2&_=1777124286252
+  ERR: 远程服务器返回错误: (502) 错误的网关。
+TRY: https://82.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10&po=1&np=1&fs=m:0+t:81+s:2048&fields=f12,f14,f3,f2&_=1777124286252
+  ERR: 基础连接已经关闭: 连接被意外关闭。
+TRY: https://19.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10&po=1&np=1&fs=m:0+t:81+s:2048&fields=f12,f14&_=1777124286252
+  ERR: 基础连接已经关闭: 连接被意外关闭。
+TRY: https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10&po=1&np=1&fs=m:0+t:81&fields=f12,f14&_=1777124286252
+  ERR: 远程服务器返回错误: (502) 错误的网关。
+
+################ DONE ################
